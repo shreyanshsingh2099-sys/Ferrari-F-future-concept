@@ -82,12 +82,14 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   }
 
   // ---------------- front intake (fascia) ----------------
-  // centre intake + two large side intakes under the headlights, separated by wide,
-  // angled body-coloured "fangs" (reference front view and hero render)
-  const grilleC = polygonSDF(smoothPolygon([[-0.20, 0.352], [0.20, 0.352], [0.30, 0.13], [0.0, 0.125], [-0.30, 0.13]], 4));
-  const grilleSide = polygonSDF(smoothPolygon([[0.36, 0.38], [0.60, 0.418], [0.80, 0.458], [0.885, 0.452], [0.918, 0.36], [0.918, 0.20], [0.87, 0.148], [0.60, 0.138], [0.43, 0.138]], 4));
-  const grilleSDF = (z, y) => Math.min(grilleC(z, y), grilleSide(Math.abs(z), y));
-  const grilleFn = (x, y, z) => Math.max(grilleSDF(z, y), 1.95 - x, y - 0.47);
+  // One wide lower intake with a flat top at bumper height, split into a centre and two side
+  // openings by angled body-coloured fangs, plus narrow vertical ducts at the outer corners
+  // (front views of sheets 03, 04 and 06).
+  const grilleC = polygonSDF(smoothPolygon([[-0.25, 0.335], [0.25, 0.335], [0.345, 0.128], [0.0, 0.122], [-0.345, 0.128]], 3));
+  const grilleSide = polygonSDF(smoothPolygon([[0.315, 0.335], [0.60, 0.338], [0.795, 0.345], [0.80, 0.24], [0.79, 0.15], [0.60, 0.135], [0.415, 0.135]], 3));
+  const grilleCorner = polygonSDF(smoothPolygon([[0.838, 0.40], [0.885, 0.428], [0.93, 0.42], [0.934, 0.20], [0.90, 0.15], [0.845, 0.15]], 3));
+  const grilleSDF = (z, y) => Math.min(grilleC(z, y), grilleSide(Math.abs(z), y), grilleCorner(Math.abs(z), y));
+  const grilleFn = (x, y, z) => Math.max(grilleSDF(z, y), 1.90 - x, y - 0.47);
   {
     const r = pcs.carve(grilleFn, { remove: true });
     pcs.hem(r.outside, {
@@ -97,82 +99,54 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   }
 
   // ---------------- headlights ----------------
-  // bold sabre headlights: pointed inner end, deep outer end wrapping round the corner
-  const headHalf = smoothPolygon([[0.58, 0.448], [0.66, 0.476], [0.80, 0.525], [0.885, 0.548], [0.935, 0.572], [0.928, 0.63], [0.86, 0.638], [0.72, 0.578], [0.60, 0.508], [0.552, 0.47]], 6);
+  // Steep, slim sabre: pointed inner-lower end, rising to the fender corner, then a thin tail
+  // that runs back along the fender towards the A-pillar (front + side views, hero render).
+  const headHalf = smoothPolygon([[0.632, 0.428], [0.70, 0.452], [0.80, 0.522], [0.875, 0.585], [0.93, 0.632], [0.92, 0.668], [0.86, 0.652], [0.76, 0.58], [0.68, 0.502], [0.64, 0.462]], 6);
   const headR = polygonSDF(headHalf);
-  const headFn = (x, y, z) => Math.max(headR(az(z), y), 1.88 - x, 0.38 - y);
+  const headTail = polygonSDF(smoothPolygon([[2.03, 0.585], [1.92, 0.607], [1.78, 0.633], [1.66, 0.655], [1.625, 0.663], [1.66, 0.671], [1.80, 0.66], [1.93, 0.646], [2.03, 0.638]], 4));
+  const headFn = (x, y, z) => {
+    const front = Math.max(headR(az(z), y), 1.88 - x, 0.38 - y);
+    let tail = Math.max(headTail(x, y), 0.70 - az(z));
+    if (tail < 0.02) { const n = surfaceNormal(x, y, z); tail = Math.max(tail, (0.45 - Math.abs(n[2])) * 0.2); }
+    return Math.min(front, tail);
+  };
   {
     const r = pcs.carve(headFn, { toMat: 'lens', toPart: 'body' });
-    pcs.hem(r.outside, { depth: 0.055, steps: 2, mat: 'blackGloss' });
-    // housing back (dark chrome) behind the lens
-    pcs.offsetCopies(r.inside, -0.055, 'lampBack', 'body', false);
-    // push the lens a hair inward so it reads as a separate glass element
+    pcs.hem(r.outside, { depth: 0.045, steps: 2, mat: 'blackGloss' });
+    pcs.offsetCopies(r.inside, -0.045, 'lampBack', 'body', false);
     for (const p of r.inside) p.mesh.mapPositions((x, y, z, nx, ny, nz) => [x - nx * 0.003, y - ny * 0.003, z - nz * 0.003]);
   }
 
   // ---------------- rear diffuser opening ----------------
-  const diffSDF = polygonSDF(smoothPolygon(SYM([[0.0, -0.2], [0.82, -0.2], [0.82, 0.25], [0.78, 0.36], [0.68, 0.405], [0.40, 0.405], [0.30, 0.39], [0.265, 0.345], [0.0, 0.345]]), 5));
+  // centre section + two arched outer venturi tunnels (rear views / rear diffuser detail)
+  const diffSDF = polygonSDF(smoothPolygon(SYM([[0.0, -0.2], [0.83, -0.2], [0.83, 0.20], [0.80, 0.30], [0.72, 0.38], [0.60, 0.415], [0.48, 0.41], [0.38, 0.37], [0.33, 0.31], [0.30, 0.30], [0.0, 0.30]]), 5));
   const diffFn = (x, y, z) => Math.max(diffSDF(z, y), x + 1.72);
   {
     const r = pcs.carve(diffFn, { remove: true });
     pcs.hem(r.outside, { depth: 0.30, steps: 2, mat: 'carbonMatte' });
   }
 
-  // ---------------- tail-light band + ring lights ----------------
-  const bandSDF = polygonSDF(smoothPolygon(SYM([[0.0, 0.598], [0.55, 0.602], [0.76, 0.618], [0.86, 0.66], [0.875, 0.71], [0.83, 0.748], [0.62, 0.762], [0.30, 0.765], [0.22, 0.785], [0.0, 0.79]]), 6));
-  const bandFn = (x, y, z) => Math.max(bandSDF(z, y), x + 1.93);
-  pcs.carve(bandFn, { toMat: 'blackGloss' });
+  // ---------------- tail lights ----------------
+  // Two black "goggles", each holding a pair of ring lights; between them the LED line runs
+  // over the paint (rear views of sheets 03, 04, 06 and the taillight layer reference).
   const RINGS = [0.548, 0.738];
+  const gogFn = (x, y, z) => Math.max(sdBox(az(z), y, 0.643, 0.688, 0.168, 0.086, 0.086), x + 1.93);
+  pcs.carve(gogFn, { toMat: 'blackGloss' });
   const ringFn = (x, y, z) => Math.max(Math.min(sdCircle(az(z), y, RINGS[0], 0.688, 0.072), sdCircle(az(z), y, RINGS[1], 0.688, 0.072)), x + 1.93);
   {
     const r = pcs.carve(ringFn, { remove: true });
     pcs.hem(r.outside, { depth: 0.03, steps: 2, mat: 'blackGloss' });
     pcs.offsetCopies(r.inside, -0.03, 'tailInner', 'body');
   }
-  // exhaust slot in the band centre
-  const exFn = (x, y, z) => Math.max(sdBox(z, y, 0, 0.737, 0.20, 0.024, 0.018), x + 1.93);
+  // full-width dark vent under the ducktail lip, below the wing
   {
-    const r = pcs.carve(exFn, { remove: true });
-    pcs.hem(r.outside, { depth: 0.09, steps: 2, mat: 'cavity' });
-    pcs.offsetCopies(r.inside, -0.09, 'cavity', 'body');
+    const ventR = (x, y, z) => Math.max(sdBox(z, y, 0, 0.818, 0.80, 0.02, 0.018), x + 1.95);
+    const r = pcs.carve(ventR, { remove: true });
+    pcs.hem(r.outside, { depth: 0.05, steps: 1, mat: 'cavity' });
+    pcs.offsetCopies(r.inside, -0.05, 'cavity', 'body');
   }
 
-  // ---------------- side scoop opening & lower intake opening ----------------
-  const scTop = pchip([[-0.66, 0.905], [-0.74, 0.912], [-0.86, 0.92]]);
-  const scOpenFn = (x, y, z) => {
-    const p = F.params(x);
-    const yb = p.scBot + 0.018, yt = p.scTop - 0.016;
-    const fy = Math.max(yb - y, y - yt);
-    const f0 = Math.max(fy, x + 0.715 > 0 ? x + 0.715 : -0.865 - x, 0.76 - az(z), y - (p.scTop - 0.03));
-    if (f0 > 0.02) return f0;
-    const n = surfaceNormal(x, y, z);
-    return Math.max(f0, (0.55 - Math.abs(n[2])) * 0.2);
-  };
-  {
-    const r = pcs.carve(scOpenFn, { remove: true });
-    pcs.hem(r.outside, { depth: 0.045, steps: 2, mat: 'cavity' });
-  }
-  // Testarossa scoop: the rear part of the sweep opens into a dark recess that narrows to a
-  // point at the front; the body-coloured blades (aero.js) run across it (reference side view)
-  const SC_TIP = -0.04, SC_END = -0.78;
-  const scoopRecessFn = (x, y, z) => {
-    if (x > SC_TIP + 0.02 || x < SC_END - 0.02 || az(z) < 0.6) return 1;
-    const p = F.params(x);
-    const h = p.scTop - p.scBot;
-    if (h < 0.02) return 1;
-    const v = (y - p.scBot) / h;
-    const t = Math.min(1, Math.max(0, (x - SC_TIP) / (SC_END - SC_TIP)));
-    const hw = 0.41 * Math.pow(t, 0.55);
-    const f = Math.max((Math.abs(v - 0.5) - hw) * h, x - SC_TIP, SC_END - x);
-    if (f > 0.02) return f;
-    const n = surfaceNormal(x, y, z);
-    return Math.max(f, (0.5 - Math.abs(n[2])) * 0.2);
-  };
-  {
-    const r = pcs.carve(scoopRecessFn, { parts: ['body', 'doorL', 'doorR'], remove: true });
-    pcs.hem(r.outside, { depth: 0.055, steps: 1, mat: 'cavity' });
-    pcs.offsetCopies(r.inside, -0.055, 'cavity');
-  }
+  // (Testarossa scoop recess and flying-buttress void are clean surface inlays: see details.js)
   const liOpenFn = (x, y, z) => {
     const p = F.params(x);
     const fy = Math.max(0.125 - y, y - (p.liTop - 0.03));
@@ -254,14 +228,6 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   const wsFn = (m) => (x, y, z) => Math.max(isGreen(x, y, z, m > 0 ? 0.006 : 0.014), xRF(az(z)) - m - x, az(z) - (zA(x) - 0.052 + m));
   pcs.carve(wsFn(0.028), { toMat: 'blackGloss' });
   pcs.carve(wsFn(0.0), { mats: ['blackGloss'], toMat: 'glass' });
-  const qwPoly = smoothPolygon([[-0.338, 0.90], [-0.338, 1.13], [-0.60, 1.085], [-0.62, 1.06]], 4);
-  const qwSDF = polygonSDF(qwPoly);
-  const qwFn = (m) => (x, y, z) => {
-    const [fcs, fct] = F.canopyTerms(x, y, z);
-    return Math.max(qwSDF(x, y) - m, isGreen(x, y, z, m > 0 ? 0.006 : 0.014), fct - fcs + 0.02 - m, 0.5 - az(z));
-  };
-  pcs.carve(qwFn(0.012), { toMat: 'blackGloss' });
-  pcs.carve(qwFn(0.0), { mats: ['blackGloss'], toMat: 'glass' });
 
   // ---------------- material zones ----------------
   // grey carbon lower body between the wheels, rising toward the rear (reference side view)

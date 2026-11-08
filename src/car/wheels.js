@@ -99,18 +99,22 @@ function makeRim(spec, M) {
   const edgeGeo = [];
   for (let k = 0; k < nSp; k++) {
     const th0 = (k / nSp) * Math.PI * 2;
+    // straight spoke offset from the radial direction by d: th(r) = th0 + atan(d / sqrt(r^2 - d^2))
+    const d = 0.046;
+    const spokeTh = (r) => th0 + Math.atan2(d, Math.sqrt(Math.max(r * r - d * d, 1e-6)));
     const section = (s) => {
       const r = rHub + (rOut - rHub) * s;
-      const th = th0 + twist * Math.pow(s, 1.35);
-      const w = 0.042 + 0.078 * Math.pow(s, 1.1); // tangential width: broad turbine blades
+      const th = spokeTh(r);
+      const w = 0.040 + 0.072 * Math.pow(s, 1.05); // broad blade, widening to the rim
       const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6); // concave face
-      const t = 0.032 + 0.01 * s; // depth
-      const ridgeOff = -0.25 * w; // asymmetric ridge for the turbine look
+      const t = 0.034 + 0.01 * s; // depth
+      const tilt = 0.014 * s; // propeller twist across the blade
+      const ridgeOff = -0.22 * w;
       const ct = Math.cos(th), st = Math.sin(th);
       const tx = -st, ty = ct; // tangential direction
       const P = (off, h, rr = r) => [ct * rr + tx * off, st * rr + ty * off, h];
       return [
-        P(-w / 2, hf - t), P(-w / 2, hf - 0.004), P(ridgeOff, hf + 0.006), P(w / 2, hf - 0.008), P(w / 2, hf - t),
+        P(-w / 2, hf - t), P(-w / 2, hf - 0.004 - tilt), P(ridgeOff, hf + 0.006), P(w / 2, hf - 0.008 + tilt), P(w / 2, hf - t),
       ];
     };
     const sg = sweepStrips(section, 32, true);
@@ -118,11 +122,11 @@ function makeRim(spec, M) {
     // machined ridge edge (thin bright strip on the ridge line)
     const ridge = (s) => {
       const r = rHub + (rOut - rHub) * s;
-      const th = th0 + twist * Math.pow(s, 1.35);
-      const w = 0.042 + 0.078 * Math.pow(s, 1.1);
+      const th = spokeTh(r);
+      const w = 0.040 + 0.072 * Math.pow(s, 1.05);
       const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6);
       const ct = Math.cos(th), st = Math.sin(th), tx = -st, ty = ct;
-      const o = -0.25 * w;
+      const o = -0.22 * w;
       return [[ct * r + tx * (o - 0.0025), st * r + ty * (o - 0.0025), hf + 0.0063], [ct * r + tx * (o + 0.0025), st * r + ty * (o + 0.0025), hf + 0.0063]];
     };
     edgeGeo.push(sweepStrips(ridge, 32, false));

@@ -126,7 +126,7 @@ export function buildEngine(M) {
   group.add(sil);
   for (const side of [-1, 1]) {
     group.add(mesh(tube([[-1.86, 0.44, side * 0.2], [-1.87, 0.50, side * 0.18]], 0.035, 12, 10), M.titanium, 'ExhaustPipe'));
-    group.add(mesh(tube([[-1.95, 0.6, side * 0.1], [-2.04, 0.72, side * 0.1], [-2.08, 0.737, side * 0.1]], 0.026, 12, 20), M.titanium, 'TailPipe'));
+    group.add(mesh(tube([[-1.92, 0.50, side * 0.14], [-1.98, 0.32, side * 0.16], [-2.03, 0.215, side * 0.16], [-2.06, 0.215, side * 0.16]], 0.03, 12, 24), M.titanium, 'TailPipe'));
   }
   // dry-sump oil tank & coolant pipes to the side radiators
   const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 24), M.alu); tank.position.set(-0.62, 0.35, 0.38); tank.name = 'OilTank';

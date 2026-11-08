@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { sweep, plate, grid, mesh, naca, mergeGeometries, fan, rod } from '../core/geo.js';
 import { boxUV } from './materials.js';
-import { PROFILES, surfaceZ, surfaceY, surfaceX, surfaceYBottom } from './bodyShape.js';
+import { PROFILES, SCOOP, sweepDepth, surfaceZ, surfaceY, surfaceX, surfaceYBottom } from './bodyShape.js';
 import { smoothstep, clamp } from '../core/math.js';
 import { sdPolygon, smoothPolygon } from '../core/sdf2d.js';
 
@@ -85,14 +85,11 @@ function intake(M) {
 
 function diffuser(M) {
   const g = new THREE.Group(); g.name = 'Diffuser';
-  const x0 = -1.70, x1 = -2.13;
+  const x0 = -1.70, x1 = -2.085;
   const h = (az) => {
-    // tunnel roof heights: centre 0.33, outer tunnels 0.395
-    const c = 0.33, o = 0.395;
-    if (az < 0.24) return c;
-    if (az < 0.30) return c + (o - c) * smoothstep(0.24, 0.30, az);
-    if (az < 0.74) return o;
-    return o - 0.05 * smoothstep(0.74, 0.82, az);
+    // flat centre section, arched outer venturi tunnels
+    if (az < 0.30) return 0.29;
+    return 0.29 + 0.115 * Math.sin(Math.PI * clamp((az - 0.30) / 0.52, 0, 1));
   };
   const ramp = (x, z) => { const t = smoothstep(x0, x1 + 0.03, x); return 0.098 + (h(Math.abs(z)) - 0.098) * Math.pow(t, 1.35); };
   const geo = grid((u, v) => { const x = x0 + (x1 - x0) * u, z = -0.81 + 1.62 * v; return [x, ramp(x, z), z]; }, 36, 120);
@@ -101,14 +98,14 @@ function diffuser(M) {
   g.add(mesh(UV(geo), mat, 'Diffuser_Ramp'));
   // fins
   const fins = [];
-  for (const zc of [-0.79, -0.63, -0.47, -0.27, 0.27, 0.47, 0.63, 0.79]) {
+  for (const zc of [-0.80, -0.55, -0.31, 0.31, 0.55, 0.80]) {
     const outline = [];
     const xs = [];
     for (let i = 0; i <= 16; i++) xs.push(x0 - 0.02 + (x1 - x0 + 0.02) * (i / 16));
-    const curve = Math.abs(zc) > 0.4 && Math.abs(zc) < 0.7 ? 0.035 * Math.sign(zc) : 0;
+    const curve = Math.abs(zc) > 0.4 && Math.abs(zc) < 0.7 ? 0.05 * Math.sign(zc) : 0;
     for (const x of xs) outline.push([x, ramp(x, zc) + 0.004]);
     for (const x of xs.slice().reverse()) outline.push([x, 0.105 + 0.03 * smoothstep(x0, x1, x)]);
-    const f = plate(outline, 0.008, 'xy', zc);
+    const f = plate(outline, 0.012, 'xy', zc);
     if (curve) { // curved inner fins (bend outward toward the trailing edge)
       const p = f.attributes.position;
       for (let i = 0; i < p.count; i++) { const t = smoothstep(x0, x1, p.getX(i)); p.setZ(i, p.getZ(i) + curve * t * t); }
@@ -150,25 +147,26 @@ function sideSkirts(M) {
 }
 
 function strakes(M) {
-  // Testarossa-inspired blades running inside the side scoop
+  // Testarossa blades: three body-coloured louvres across the dark scoop recess, converging
+  // to the recess's pointed front tip and rising back to the unsculpted surface.
   const g = new THREE.Group(); g.name = 'SideStrakes';
-  const blades = [[0.30, 0.30], [0.52, 0.12], [0.73, -0.08]]; // [height fraction, start x]
+  const offs = [-0.62, 0, 0.62];
   for (const s of [-1, 1]) {
     const geos = [];
-    for (const [v, xs] of blades) {
-      const xe = -0.735;
-      const sec = (t) => {
-        const x = xs + (xe - xs) * t;
-        const yb = PROFILES.scBot(x), yt = PROFILES.scTop(x);
-        const y = yb + v * (yt - yb);
+    for (const o of offs) {
+      const x0 = SCOOP.tip - 0.005, x1 = SCOOP.end + 0.012;
+      const sec = (u) => {
+        const x = x0 + (x1 - x0) * u;
+        const t = clamp((x - SCOOP.tip) / (SCOOP.end - SCOOP.tip), 0, 1);
+        const y = SCOOP.y(t) + o * SCOOP.h(t);
         const zf = surfaceZ(x, y) ?? 0.85;
-        const d = (x < 0.78 ? PROFILES.scDepth(x) : 0) * (0.25 + 0.75 * Math.sin(Math.min(1, v * 1.2) * Math.PI / 2));
-        const tip = smoothstep(0, 0.18, t);
-        const zo = zf + d * 0.92 * tip;
-        const th = 0.008 + 0.01 * tip;
-        return [[x, y - th / 2, s * (zf - 0.01)], [x, y - th / 2 + 0.006 * tip, s * zo], [x, y + th / 2 + 0.008 * tip, s * zo], [x, y + th / 2, s * (zf - 0.01)]];
+        const k = smoothstep(0, 0.35, t);
+        const zo = zf + sweepDepth(x, y) * 0.9 * k;
+        const zi = zf - 0.035 * smoothstep(0, 0.2, t);
+        const th = 0.010 + 0.012 * t;
+        return [[x, y - th / 2, s * zi], [x, y - th / 2 + 0.003, s * zo], [x, y + th / 2, s * zo], [x, y + th / 2, s * zi]];
       };
-      const geo = sweep(sec, 48, { closed: true, caps: true });
+      const geo = sweep(sec, 60, { closed: true, caps: true });
       if (s > 0) { const idx = geo.index.array; for (let i = 0; i < idx.length; i += 3) { const tmp = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = tmp; } geo.computeVertexNormals(); }
       geos.push(geo);
     }
@@ -181,14 +179,6 @@ function scoopGrilles(M) {
   // honeycomb radiator grilles set just inside the scoop mouths and lower intakes
   const g = new THREE.Group(); g.name = 'ScoopGrilles';
   for (const s of [-1, 1]) {
-    const geo = grid((u, v) => {
-      const x = -0.705 - 0.17 * u;
-      const yb = PROFILES.scBot(x) + 0.01, yt = PROFILES.scTop(x) - 0.01;
-      const y = yb + (yt - yb) * v;
-      const z = (surfaceZ(-0.70, y) ?? 0.85) - 0.05 - 0.12 * u;
-      return [x, y, s * z];
-    }, 12, 10);
-    g.add(mesh(geo, M.grille, 'ScoopGrille_' + (s > 0 ? 'R' : 'L'), { cast: false }));
     const geo2 = grid((u, v) => {
       const x = -0.895 - 0.08 * u;
       const y = 0.13 + (PROFILES.liTop(x) - 0.17) * v;
@@ -216,7 +206,8 @@ function wing(M) {
     return foil.map(([x, y]) => {
       const xr = x * c, yr = y * c;
       const ca = Math.cos(aoa), sa = Math.sin(aoa);
-      return [xr * ca + yr * sa - sweepBack, -xr * sa + yr * ca + 0.01 * az * az, z];
+      // gull-wing: the outer thirds droop down to the end plates (reference rear views)
+      return [xr * ca + yr * sa - sweepBack, -xr * sa + yr * ca + 0.01 * az * az - 0.06 * smoothstep(0.45, 1.0, az), z];
     });
   };
   const wingGeo = sweep(sec, 60, { closed: true, caps: true, smoothAcross: true });
@@ -235,7 +226,7 @@ function wing(M) {
   const plates = [];
   for (const sg of [-1, 1]) {
     const zc = sg * 0.872;
-    const top = [[-1.66, 0.985], [-1.75, 1.0], [-1.90, 1.03], [-2.04, 1.058], [-2.115, 1.06], [-2.13, 1.04]];
+    const top = [[-1.66, 0.935], [-1.75, 0.95], [-1.90, 0.98], [-2.04, 1.005], [-2.115, 1.008], [-2.13, 0.99]];
     const base = [];
     for (let i = 0; i <= 8; i++) { const x = -2.10 + 0.22 * (i / 8); base.push([x, Math.max(0.82, (surfaceY(x, Math.abs(zc) - 0.01) ?? 0.84) - 0.02)]); }
     const outline = top.concat(base).concat([[-1.84, 0.93], [-1.70, 0.94]]);
@@ -245,10 +236,10 @@ function wing(M) {
   // swan-neck pylons
   const pyl = [];
   for (const s of [-1, 1]) {
-    const zc = s * 0.43;
+    const zc = s * 0.30;
     const outline = [];
     const xs = [-1.79, -1.84, -1.90, -1.96, -2.0];
-    for (const x of xs) outline.push([x, (surfaceY(x, 0.43) ?? 0.85) - 0.02]);
+    for (const x of xs) outline.push([x, (surfaceY(x, 0.30) ?? 0.85) - 0.02]);
     outline.push([-1.99, 0.94], [-1.93, 1.0], [-1.86, 1.0], [-1.83, 0.96]);
     pyl.push(plate(outline, 0.016, 'xy', zc, 0.002));
   }
