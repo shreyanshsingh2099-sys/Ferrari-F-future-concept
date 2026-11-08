@@ -76,7 +76,12 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
 
   // ---------------- wheel arches ----------------
   for (const a of [DIMS.archF, DIMS.archR]) {
-    const fn = (x, y, z) => Math.max(sdCircle(x, y, a.x, a.y, a.r), 0.60 - az(z));
+    const fn = (x, y, z) => {
+      const f = Math.max(sdCircle(x, y, a.x, a.y, a.r), 0.60 - az(z));
+      if (f > 0.02) return f;
+      // open the side wall only: never cut through the fender top (deep bonnet valley)
+      return Math.max(f, (surfaceNormal(x, y, z)[1] - 0.8) * 0.2);
+    };
     const r = pcs.carve(fn, { remove: true });
     pcs.hem(r.outside, { depth: 0.035, steps: 2, mat: 'paint' });
   }
@@ -107,7 +112,7 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   const headFn = (x, y, z) => {
     const front = Math.max(headR(az(z), y), 1.88 - x, 0.38 - y);
     let tail = Math.max(headTail(x, y), 0.70 - az(z));
-    if (tail < 0.02) { const n = surfaceNormal(x, y, z); tail = Math.max(tail, (0.45 - Math.abs(n[2])) * 0.2); }
+    if (tail < 0.02) { const n = surfaceNormal(x, y, z); tail = Math.max(tail, (0.72 - Math.abs(n[2])) * 0.2); } // side-facing only, never the fender top
     return Math.min(front, tail);
   };
   {
@@ -237,6 +242,8 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   // dark carbon lower tail (diffuser side plates) and front corner ducts
   pcs.carve((x, y, z) => Math.max(x + 1.84, y - 0.47, 0.5 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
   pcs.carve((x, y, z) => Math.max(1.96 - x, y - 0.40, 0.80 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
+  // carbon lower lip under the intakes, flowing into the splitter
+  pcs.carve((x, y, z) => Math.max(1.9 - x, y - 0.14), { mats: ['paint'], toMat: 'carbonMatte' });
   // dark carbon cowl between the bonnet and the windscreen base (reference top view)
   pcs.carve((x, y, z) => Math.max(x - 1.398, 1.2 - x, az(z) - 0.64, 0.6 - y, F.lower(x, y, z) - 0.008), { parts: ['body'], mats: ['paint'], toMat: 'carbon' });
   // flush door handles

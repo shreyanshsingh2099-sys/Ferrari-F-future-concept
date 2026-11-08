@@ -29,9 +29,10 @@ function splitter(M) {
   // corner dive planes (canards), two per side
   const dive = [];
   for (const s of [-1, 1]) {
-    for (const [y, dx] of [[0.22, 0], [0.30, -0.03]]) {
-      const zc = 0.86 * s;
-      const x0 = (surfaceX(y, zc, 1) ?? 2.1);
+    // a single canard on the bumper corner, below the corner duct (hero render)
+    for (const [y, dx] of [[0.13, 0]]) {
+      const zc = 0.90 * s;
+      const x0 = (surfaceX(0.2, 0.84 * s, 1) ?? 2.1);
       const shape = [[0.02, 0], [-0.12 + dx, 0], [-0.1 + dx, 0.075 * s], [0.03, 0.03 * s]];
       const gg = plate(shape, 0.006, 'xz');
       gg.rotateZ(-0.12); // raise the trailing edge (about the canard's own root)
@@ -46,7 +47,7 @@ function splitter(M) {
 function intake(M) {
   const g = new THREE.Group(); g.name = 'FrontIntake';
   // honeycomb grille surface, set back inside the opening
-  const set = 0.13;
+  const set = 0.07; // honeycomb close behind the openings so the mesh reads, as on the reference
   const geo = grid((u, v) => {
     const z = -0.9 + 1.8 * u, y = 0.125 + 0.27 * v;
     let x = surfaceX(y, clamp(z, -0.86, 0.86), 1) ?? 2.1;
@@ -62,24 +63,15 @@ function intake(M) {
   g.add(mesh(back, M.cavity, 'Intake_Radiators', { cast: false }));
   // thin dark vertical slats in the centre intake + one carbon vane across each side intake
   const slats = [];
-  for (const zc of [-0.16, -0.08, 0, 0.08, 0.16]) {
+  // two bold carbon blades in the centre opening (front splitter/duct detail)
+  for (const zc of [-0.125, 0.125]) {
     const outline = [];
     const ys = []; for (let y = 0.135; y <= 0.345; y += 0.03) ys.push(y);
     for (const y of ys) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.03, y]);
     for (const y of ys.slice().reverse()) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.14, y]);
-    slats.push(plate(outline, 0.008, 'xy', zc));
+    slats.push(plate(outline, 0.016, 'xy', zc, 0.002));
   }
-  g.add(mesh(mergeGeometries(slats), M.blackSatin, 'Intake_CentreSlats'));
-  const vanes = [];
-  for (const s of [-1, 1]) {
-    const sec = (t) => {
-      const az = 0.45 + 0.44 * t, y = 0.255 + 0.04 * t;
-      const x = (surfaceX(y, s * Math.min(az, 0.88), 1) ?? 2.2) - 0.05;
-      return [[x + 0.01, y + 0.008, s * az], [x - 0.12, y + 0.02, s * az], [x - 0.12, y + 0.008, s * az], [x + 0.01, y - 0.004, s * az]];
-    };
-    vanes.push(sweep(sec, 24, { closed: true, caps: true }));
-  }
-  g.add(mesh(UV(mergeGeometries(vanes)), M.carbon, 'Intake_SideVanes'));
+  g.add(mesh(UV(mergeGeometries(slats)), M.carbon, 'Intake_CentreBlades'));
   return g;
 }
 
@@ -261,7 +253,7 @@ function hoodFins(M) {
     for (const x of xs.slice().reverse()) outline.push([x, (surfaceY(x, zc) ?? 0.7) - 0.078]);
     geos.push(plate(outline, 0.011, 'xy', zc, 0.0015));
   }
-  return mesh(UV(mergeGeometries(geos)), M.carbonMatte, 'Fluxus_DuctFins');
+  return mesh(UV(mergeGeometries(geos)), M.blackGloss, 'Fluxus_DuctFins');
 }
 
 /** Engine cover louvre slats (parented to the engine cover). */
