@@ -25,7 +25,7 @@ function findEnd(inside, outside) {
   return a;
 }
 
-export function meshBody({ rings = 520, half = 160, rays = 420 } = {}) {
+export function meshBody({ rings = 640, half = 196, rays = 480 } = {}) {
   const x0 = findEnd(DIMS.XTAIL + 0.3, DIMS.XTAIL - 0.01);
   const x1 = findEnd(DIMS.XTIP - 0.3, DIMS.XTIP + 0.01);
   const mesh = new MeshData();

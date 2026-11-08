@@ -94,7 +94,7 @@ function makeRim(spec, M) {
   // twisted spokes
   const nSp = 5;
   const rHub = 0.072, rOut = R - 0.018;
-  const twist = 0.62; // radians of sweep from hub to rim
+  const twist = 0.46; // radians of sweep from hub to rim
   const spokeGeo = [];
   const edgeGeo = [];
   for (let k = 0; k < nSp; k++) {
@@ -102,7 +102,7 @@ function makeRim(spec, M) {
     const section = (s) => {
       const r = rHub + (rOut - rHub) * s;
       const th = th0 + twist * Math.pow(s, 1.35);
-      const w = 0.030 + 0.055 * Math.pow(s, 1.2); // tangential width
+      const w = 0.042 + 0.078 * Math.pow(s, 1.1); // tangential width: broad turbine blades
       const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6); // concave face
       const t = 0.032 + 0.01 * s; // depth
       const ridgeOff = -0.25 * w; // asymmetric ridge for the turbine look
@@ -119,7 +119,7 @@ function makeRim(spec, M) {
     const ridge = (s) => {
       const r = rHub + (rOut - rHub) * s;
       const th = th0 + twist * Math.pow(s, 1.35);
-      const w = 0.030 + 0.055 * Math.pow(s, 1.2);
+      const w = 0.042 + 0.078 * Math.pow(s, 1.1);
       const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6);
       const ct = Math.cos(th), st = Math.sin(th), tx = -st, ty = ct;
       const o = -0.25 * w;

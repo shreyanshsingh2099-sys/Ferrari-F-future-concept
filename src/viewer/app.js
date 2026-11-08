@@ -81,7 +81,8 @@ const timer = new THREE.Timer();
 
 // ---------- camera presets ----------
 const VIEWS = {
-  threeQuarter: { pos: [5.6, 1.55, -4.6], target: [0.1, 0.5, 0] },
+  // exact camera of the reference hero render (recovered by tools/fit_camera.py)
+  threeQuarter: { pos: [7.037, 1.174, -4.61], target: [-0.08, 0.052, -0.249], fov: 25 },
   front: { pos: [8.5, 0.62, 0], target: [0, 0.55, 0] },
   side: { pos: [0.15, 0.62, -8.0], target: [0.15, 0.55, 0] },
   rear: { pos: [-8.5, 0.75, 0], target: [0, 0.55, 0] },

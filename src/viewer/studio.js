@@ -10,9 +10,9 @@ function softboxEnvironment(renderer, theme) {
   const domeMat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false,
     uniforms: {
-      top: { value: new THREE.Color(light ? 0x2a2d32 : 0x6c7178) },
-      mid: { value: new THREE.Color(light ? 0x15161a : 0x4a4f56) },
-      bot: { value: new THREE.Color(light ? 0x08080a : 0x24262a) },
+      top: { value: new THREE.Color(light ? 0x1c1e22 : 0x2c2f35) },
+      mid: { value: new THREE.Color(light ? 0x0e0f12 : 0x1a1c20) },
+      bot: { value: new THREE.Color(light ? 0x060607 : 0x0b0c0e) },
     },
     vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
     fragmentShader: 'uniform vec3 top,mid,bot; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.0 ? mix(mid,top,smoothstep(0.0,0.7,h)) : mix(mid,bot,smoothstep(0.0,-0.25,h)); gl_FragColor=vec4(c,1.); }',
@@ -26,13 +26,13 @@ function softboxEnvironment(renderer, theme) {
     return m;
   };
   const k = light ? 0.8 : 1.0;
-  // big overhead softbox (classic car-studio "ceiling")
-  box(9, 3.2, 0, 7.5, 0, 6 * k, 0xffffff, [0, 0, 0]);
+  // overhead softbox (narrower than before so the paint keeps deep, dark reflections around it)
+  box(7, 2.0, 0, 7.5, 0, 5 * k, 0xffffff, [0, 0, 0]);
   // long strip lights running along the car - produce the characteristic streak highlights
-  box(10, 0.45, 0, 4.2, 4.2, 9 * k);
-  box(10, 0.45, 0, 4.2, -4.2, 9 * k);
-  box(10, 0.3, 0, 2.2, 6.5, 4 * k);
-  box(10, 0.3, 0, 2.2, -6.5, 4 * k);
+  box(10, 0.35, 0, 4.4, 4.0, 10 * k);
+  box(10, 0.35, 0, 4.4, -4.0, 10 * k);
+  box(10, 0.22, 0, 1.9, 6.5, 5 * k);
+  box(10, 0.22, 0, 1.9, -6.5, 5 * k);
   // front and rear panels
   box(4, 2.2, 8, 2.5, 0, 3 * k, 0xf4f6ff);
   box(4, 2.2, -8, 2.5, 0, 3 * k, 0xf4f6ff);
@@ -40,7 +40,7 @@ function softboxEnvironment(renderer, theme) {
   box(2.5, 2.5, 5, 1.2, -6, 2.2 * k, 0xffe2c4);
   box(2.5, 2.5, -5, 1.2, 6, 2.0 * k, 0xdfe8ff);
   // floor bounce
-  const fl = new THREE.Mesh(new THREE.CircleGeometry(30, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(light ? 0x111113 : 0x3a3d42) }));
+  const fl = new THREE.Mesh(new THREE.CircleGeometry(30, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(light ? 0x0c0c0e : 0x26282c) }));
   fl.rotation.x = -Math.PI / 2; fl.position.y = -0.01; env.add(fl);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);
@@ -135,7 +135,7 @@ export class Studio {
     key.shadow.bias = -0.0002; key.shadow.normalBias = 0.02;
     this.group.add(key, key.target);
     this.key = key;
-    const hemi = new THREE.HemisphereLight(dark ? 0x30343a : 0xe8eef5, dark ? 0x050505 : 0x6c6f73, dark ? 0.25 : 0.35);
+    const hemi = new THREE.HemisphereLight(dark ? 0x30343a : 0xe8eef5, dark ? 0x050505 : 0x6c6f73, dark ? 0.15 : 0.18);
     this.group.add(hemi);
   }
 

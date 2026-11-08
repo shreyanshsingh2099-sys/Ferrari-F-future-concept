@@ -33,7 +33,7 @@ On a desktop the car is generated in about 3 seconds.
 | Open / close a door | click the door, or *Left / Right / Both doors* | `L`, `R` |
 | Front bonnet, engine cover | click it, or the panel buttons | `H`, `E` |
 | Active wing (raise + incidence) | click the wing, or *Active wing* | `W` |
-| Camera presets | *¾ Front, Front, Side, Rear, Top, ¾ Rear*, *Reset camera* | `Q F S B U` |
+| Camera presets | *¾ Front* (the exact camera of your hero render), *Front, Side, Rear, Top, ¾ Rear*, *Reset camera* | `Q F S B U` |
 | Viewing modes | bottom bar | `1`–`4` |
 | Turntable, X-ray, design notes | Studio section | `T`, `X`, `N` |
 
@@ -55,7 +55,7 @@ collapsible control sheet and adjusts the camera framing for portrait.
 | File | What it is |
 |---|---|
 | `index.html` + `src/` | The interactive web viewer (Three.js). |
-| `models/ferrari-f-future.glb` | Optimised glTF 2.0 binary (13 MB): 397 named mesh nodes, about 600k triangles, PBR materials (clearcoat, anisotropy, sheen, emissive), embedded textures, `KHR_mesh_quantization`. It includes 5 animations: `Door_L_Open`, `Door_R_Open`, `Bonnet_Open`, `EngineCover_Open`, `Wing_Active`. It passes the Khronos glTF validator with no errors. |
+| `models/ferrari-f-future.glb` | Optimised glTF 2.0 binary (17 MB): 397 named mesh nodes, about 800k triangles, PBR materials (clearcoat, anisotropy, sheen, emissive), embedded textures, `KHR_mesh_quantization`. It includes 5 animations: `Door_L_Open`, `Door_R_Open`, `Bonnet_Open`, `EngineCover_Open`, `Wing_Active`. It passes the Khronos glTF validator with no errors. |
 | `models/ferrari-f-future.blend` | An editable Blender project (Blender 5.x). It has a collection per sub-assembly, the animations as Actions, a studio (floor, area-light softboxes, world), a hero camera matching the reference and Cycles settings. ![](qa/render_blender_cycles_preview.png) |
 | `qa/` | QA comparisons against the reference views ([QA report](qa/QA-REPORT.md)). |
 

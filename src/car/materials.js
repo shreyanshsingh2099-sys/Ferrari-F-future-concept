@@ -25,7 +25,7 @@ function texFrom(c, { srgb = true, repeat = 1 } = {}) {
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
 /** 2x2 twill carbon weave. Returns { map, rough, aniso } textures. */
-function makeCarbon({ cells = 8, size = 512, base = [22, 22, 24], hi = [70, 72, 78], tint = null } = {}) {
+function makeCarbon({ cells = 8, size = 512, base = [38, 38, 42], hi = [118, 120, 128], tint = null } = {}) {
   const c = canvas(size, size), ctx = c.getContext('2d');
   const ca = canvas(size, size), cta = ca.getContext('2d');
   const cs = size / cells;
@@ -137,7 +137,7 @@ function makeTyreSidewall() {
   return texFrom(c, { srgb: false });
 }
 
-export function createMaterials({ paint = 0x8a0710 } = {}) {
+export function createMaterials({ paint = 0x96101a } = {}) {
   const M = {};
   const carbon = HAS_DOM ? makeCarbon({}) : null;
   const carbonRed = HAS_DOM ? makeCarbon({ base: [26, 8, 10], hi: [96, 24, 30] }) : null;
@@ -147,19 +147,19 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   if (carbonRed) { carbonRed.map.repeat.set(22, 22); carbonRed.aniso.repeat.set(22, 22); }
 
   M.paint = new THREE.MeshPhysicalMaterial({
-    name: 'Paint_RossoFuture', color: paint, metalness: 0.55, roughness: 0.3,
-    clearcoat: 1.0, clearcoatRoughness: 0.035, envMapIntensity: 1.0,
+    name: 'Paint_RossoFuture', color: paint, metalness: 0.42, roughness: 0.24,
+    clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 1.15,
     normalMap: flakes, normalScale: new THREE.Vector2(0.06, 0.06),
   });
   M.paintInner = new THREE.MeshStandardMaterial({ name: 'Paint_Inner', color: 0x5a060c, metalness: 0.3, roughness: 0.6 });
   M.carbon = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_Gloss', color: 0xb8b8b8, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.42,
-    clearcoat: 0.9, clearcoatRoughness: 0.06, envMapIntensity: 0.55,
+    name: 'Carbon_Gloss', color: 0xffffff, map: carbon?.map ?? null, metalness: 0.15, roughness: 0.36,
+    clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 1.0,
     anisotropy: carbon ? 0.6 : 0, anisotropyMap: carbon?.aniso ?? null,
   });
   M.carbonMatte = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_Satin', color: 0x9a9a9a, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.55,
-    clearcoat: 0.3, clearcoatRoughness: 0.4, envMapIntensity: 0.45,
+    name: 'Carbon_Satin', color: 0xd0d0d0, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.5,
+    clearcoat: 0.3, clearcoatRoughness: 0.35, envMapIntensity: 0.8,
   });
   M.carbonRed = new THREE.MeshPhysicalMaterial({
     name: 'Carbon_RossoTint', color: 0xd0d0d0, map: carbonRed?.map ?? null, metalness: 0.2, roughness: 0.4,
@@ -168,12 +168,12 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   // Tinted glazing: transparent with strong (Fresnel) reflections. Cheaper and more robust
   // than screen-space transmission and lets the cockpit be seen from outside.
   M.glass = new THREE.MeshPhysicalMaterial({
-    name: 'Glass_Tinted', color: 0x0e1114, metalness: 0.0, roughness: 0.03, transparent: true, opacity: 0.32,
-    envMapIntensity: 1.6, specularIntensity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02, side: THREE.DoubleSide, depthWrite: false,
+    name: 'Glass_Tinted', color: 0x0b0d10, metalness: 0.0, roughness: 0.1, transparent: true, opacity: 0.45,
+    envMapIntensity: 0.45, specularIntensity: 0.35, clearcoat: 0.0, side: THREE.DoubleSide, depthWrite: false,
   });
   M.glassClear = new THREE.MeshPhysicalMaterial({
-    name: 'Glass_Lens', color: 0x1a1e24, metalness: 0, roughness: 0.0, transparent: true, opacity: 0.35,
-    side: THREE.DoubleSide, envMapIntensity: 1.2, clearcoat: 1, depthWrite: false,
+    name: 'Glass_Lens', color: 0x040506, metalness: 0, roughness: 0.04, transparent: true, opacity: 0.82,
+    side: THREE.DoubleSide, envMapIntensity: 0.7, clearcoat: 1, clearcoatRoughness: 0.03, depthWrite: false,
   });
   M.glassRed = new THREE.MeshPhysicalMaterial({
     name: 'Glass_RedLens', color: 0xb01010, metalness: 0, roughness: 0.05, transmission: 0.6, thickness: 0.004,
@@ -189,7 +189,7 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   M.aluDark = new THREE.MeshStandardMaterial({ name: 'Aluminium_Cast', color: 0x8b8e93, metalness: 1, roughness: 0.42 });
   M.titanium = new THREE.MeshStandardMaterial({ name: 'Titanium_Exhaust', color: 0x9c8f86, metalness: 1, roughness: 0.28 });
   M.gold = new THREE.MeshStandardMaterial({ name: 'Gold_Foil', color: 0xd9a33a, metalness: 1, roughness: 0.25 });
-  M.rim = new THREE.MeshPhysicalMaterial({ name: 'Rim_Gunmetal', color: 0x3c3f45, metalness: 1, roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.1 });
+  M.rim = new THREE.MeshPhysicalMaterial({ name: 'Rim_Gunmetal', color: 0x80858d, metalness: 1, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.1 });
   M.rimMachined = new THREE.MeshStandardMaterial({ name: 'Rim_Machined', color: 0xa9adb3, metalness: 1, roughness: 0.18 });
   M.tyre = new THREE.MeshStandardMaterial({ name: 'Tyre_Rubber', color: 0x141414, metalness: 0, roughness: 0.82 });
   if (HAS_DOM) {
@@ -205,7 +205,7 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   M.tricolorR = new THREE.MeshStandardMaterial({ name: 'Badge_Red', color: 0xc8102e, roughness: 0.3 });
 
   // lights
-  M.ledWhite = new THREE.MeshStandardMaterial({ name: 'LED_White', color: 0xffffff, emissive: 0xeaf2ff, emissiveIntensity: 2.2, roughness: 0.2 });
+  M.ledWhite = new THREE.MeshStandardMaterial({ name: 'LED_White', color: 0xffffff, emissive: 0xeaf2ff, emissiveIntensity: 3.0, roughness: 0.2 });
   M.ledAmber = new THREE.MeshStandardMaterial({ name: 'LED_Amber', color: 0xffa020, emissive: 0xff8a00, emissiveIntensity: 0.0, roughness: 0.3 });
   M.ledRed = new THREE.MeshStandardMaterial({ name: 'LED_Red', color: 0xff1010, emissive: 0xff0a0a, emissiveIntensity: 2.6, roughness: 0.3 });
   M.ledRedDim = new THREE.MeshStandardMaterial({ name: 'LED_RedDim', color: 0x400404, emissive: 0x7a0000, emissiveIntensity: 0.6, roughness: 0.35 });
