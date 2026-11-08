@@ -53,6 +53,22 @@ Remaining differences: the reference fascia and fender crests are more sharply f
 blades are finer. The underbody plan shows more channels than the venturi floor here. The sheets themselves differ by
 a few centimetres in places (for example, the windscreen header height).
 
+## Front-end sharpening pass
+
+The front bumper and fenders were sharpened against the front views and the colour-coded surface view (ref-05):
+- **Fender crests:** the bonnet now has a flat, low centre with steep walls climbing to a **sharp ridge**, the fender top
+  breaks away outboard of the crest, and the shoulder into the side wall is tighter.
+- **Bumper:** the bonnet's leading edge is the most forward line, the bumper face leans back to a **crisp raised lip**
+  over the intake, then tucks under into a **carbon lower lip** and the splitter.
+- **Intakes:** honeycomb set close behind the openings, two bold carbon blades in the centre, clean corner ducts, a
+  single canard per corner, and dark bonnet-vent fins.
+- **Clean-ups:** the wheel-arch cut and arch liners no longer break through the lower bonnet surface.
+
+![](render_front_closeup.png)
+
+Measured after this pass: plan outline mean error **7.5 mm** (was 11.2 mm), side silhouette 5.4 mm, and sheet-06
+silhouette overlap side 0.854, top 0.960, front 0.847, rear 0.828.
+
 ## View-by-view
 
 | View | Comparison | Assessment |

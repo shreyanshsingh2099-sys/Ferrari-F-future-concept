@@ -220,7 +220,7 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   if (HAS_DOM) {
     const hex = makeMesh(256, 12, false);
     hex.repeat.set(30, 30);
-    M.grille = new THREE.MeshStandardMaterial({ name: 'Grille_Honeycomb', color: 0x111113, metalness: 0.6, roughness: 0.4, alphaMap: hex, alphaTest: 0.5, side: THREE.DoubleSide });
+    M.grille = new THREE.MeshStandardMaterial({ name: 'Grille_Honeycomb', color: 0x2c2e33, metalness: 0.75, roughness: 0.35, alphaMap: hex, alphaTest: 0.5, side: THREE.DoubleSide });
   } else M.grille = M.blackSatin;
 
   // interior

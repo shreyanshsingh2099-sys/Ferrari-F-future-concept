@@ -27,14 +27,18 @@ export const PROFILES = {
   // lateral position of the crest
   zf: P_([[2.455, 0.32], [2.38, 0.50], [2.30, 0.60], [2.20, 0.68], [2.10, 0.735], [1.95, 0.77], [1.80, 0.785], [1.55, 0.792], [1.35, 0.792], [1.20, 0.782], [1.05, 0.755], [0.92, 0.722], [0.75, 0.703], [0.3, 0.697], [-0.2, 0.697], [-0.45, 0.70], [-0.65, 0.745], [-0.9, 0.80], [-1.2, 0.83], [-1.6, 0.83], [-1.9, 0.815], [-2.05, 0.79], [-2.125, 0.75]]),
   // curvature of the fall-off outboard of the crest (towards the side wall)
-  vp: P_([[2.455, 2.0], [2.25, 2.4], [1.8, 2.6], [1.3, 2.6], [1.0, 2.2], [0.5, 2.0], [-2.125, 2.0]]),
+  vp: P_([[2.455, 2.6], [2.3, 3.6], [2.1, 4.4], [1.8, 4.6], [1.5, 4.2], [1.25, 3.4], [1.0, 2.4], [0.5, 2.0], [-2.125, 2.0]]),
+  // front fender sharpness: kl = outward slope just past the crest (creates a defined ridge),
+  // ridge = how much the inboard side climbs to the crest with a slope instead of rounding over
+  kl: P_([[2.455, 0.28], [2.25, 0.42], [1.9, 0.48], [1.5, 0.45], [1.15, 0.3], [0.92, 0.0], [-2.125, 0.0]]),
+  ridge: P_([[2.455, 0.7], [2.3, 1.0], [1.5, 1.0], [1.2, 0.7], [0.92, 0.0], [-2.125, 0.0]]),
   kout: P_([[2.455, 2.4], [2.2, 1.9], [1.9, 1.6], [1.5, 1.5], [1.2, 1.7], [1.0, 2.6], [0.8, 4.0], [0.0, 4.5], [-0.45, 4.2], [-0.7, 3.0], [-1.0, 2.0], [-1.5, 1.8], [-2.0, 2.0], [-2.125, 2.4]]),
   // height of maximum width and the section tuck above/below it
   ym: P_([[2.455, 0.28], [2.2, 0.33], [1.8, 0.42], [1.35, 0.47], [0.9, 0.48], [0.0, 0.46], [-0.9, 0.50], [-1.35, 0.52], [-2.0, 0.48], [-2.125, 0.45]]),
   aUp: P_([[2.4, 0.25], [0, 0.30], [-2.1, 0.25]]),
   aDn: P_([[2.4, 0.35], [1.0, 0.45], [-1.0, 0.45], [-2.1, 0.35]]),
   ybot: P_([[2.455, 0.15], [2.3, 0.135], [2.0, 0.118], [1.7, 0.108], [1.0, 0.098], [-1.0, 0.098], [-1.6, 0.11], [-1.9, 0.13], [-2.125, 0.16]]),
-  kSh: P_([[2.4, 0.018], [2.1, 0.02], [1.8, 0.022], [1.3, 0.024], [1.0, 0.03], [0.6, 0.035], [0.0, 0.035], [-0.5, 0.035], [-1.0, 0.03], [-1.6, 0.03], [-2.1, 0.035]]),
+  kSh: P_([[2.4, 0.012], [2.1, 0.013], [1.8, 0.015], [1.3, 0.02], [1.0, 0.028], [0.6, 0.035], [0.0, 0.035], [-0.5, 0.035], [-1.0, 0.03], [-1.6, 0.03], [-2.1, 0.035]]),
 
   // ---- canopy ----
   roof: P_([[2.0, 0.30], [1.6, 0.565], [1.40, 0.672], [1.31, 0.715], [1.20, 0.766], [1.08, 0.822], [0.95, 0.880], [0.83, 0.934], [0.70, 0.990], [0.57, 1.047], [0.47, 1.090], [0.38, 1.118], [0.27, 1.137], [0.15, 1.150], [0.05, 1.156], [-0.07, 1.153], [-0.20, 1.143], [-0.32, 1.129], [-0.45, 1.113], [-0.57, 1.100], [-0.70, 1.084], [-0.82, 1.062], [-0.95, 1.033], [-1.07, 1.003], [-1.20, 0.976], [-1.33, 0.947], [-1.45, 0.923], [-1.55, 0.907], [-1.70, 0.887], [-1.85, 0.868], [-1.95, 0.845], [-2.10, 0.72]]),
@@ -73,14 +77,14 @@ export function sweepDepth(x, y) {
   if (v < -0.05 || v > 1) return 0;
   return PR.scDepth(x) * smoothstep(-0.05, 0.62, v) * (1 - smoothstep(0.84, 1.0, v));
 }
-const KNOSE = 0.05, KTAIL = 0.05;
+const KNOSE = 0.02, KTAIL = 0.05;
 
 /** Evaluate all x-dependent parameters of a cross-section. */
 export function params(x) {
   const P = {
     x,
     W: PR.W(x), Wp: PR.W.deriv(x),
-    hf: PR.hf(x), hc: PR.hc(x), zf: PR.zf(x), kout: PR.kout(x), vp: PR.vp(x),
+    hf: PR.hf(x), hc: PR.hc(x), zf: PR.zf(x), kout: PR.kout(x), vp: PR.vp(x), kl: PR.kl(x), ridge: PR.ridge(x),
     hfp: PR.hf.deriv(x),
     ym: PR.ym(x), aUp: PR.aUp(x), aDn: PR.aDn(x), ybot: PR.ybot(x), kSh: PR.kSh(x),
     roof: PR.roof(x), roofP: PR.roof.deriv(x), crown: PR.crown(x), wb: PR.wb(x), tanT: PR.tanT(x),
@@ -123,13 +127,16 @@ function lowerTop(P, az) {
   const t = az / P.zf;
   if (t <= 1) {
     // s(t) = (p+1) t^p - p t^(p+1): flat valley floor, crest with zero slope at t = 1
-    const p = P.vp, tp = Math.pow(t, p);
-    const s = (p + 1) * tp - p * tp * t;
-    const ds = (p * (p + 1) * tp / Math.max(t, 1e-6)) * (1 - t);
+    // blended with t^p, which reaches the crest with a slope -> a defined ridge on the fenders
+    const p = P.vp, tp = Math.pow(t, p), a = P.ridge;
+    const s0 = (p + 1) * tp - p * tp * t;
+    const ds0 = (p * (p + 1) * tp / Math.max(t, 1e-6)) * (1 - t);
+    const s = s0 + (tp - s0) * a;
+    const ds = ds0 + ((p * tp) / Math.max(t, 1e-6) - ds0) * a;
     return [P.hc + (P.hf - P.hc) * s, ((P.hf - P.hc) * ds) / P.zf];
   }
   const d = az - P.zf;
-  return [P.hf - P.kout * d * d, -2 * P.kout * d];
+  return [P.hf - P.kl * d - P.kout * d * d, -P.kl - 2 * P.kout * d];
 }
 
 export function fieldLower(P, y, z) {
@@ -178,12 +185,17 @@ export function field(P, y, z) {
   let f = smin(lo, ca, P.kBelt);
   // slightly convex nose and tail faces (also gives the mesher interior samples on them)
   const zq = z * z;
-  const yf = (y - 0.27) / 0.16;
   // tail: light band is the rearmost part; below it the body tucks in above the diffuser
   const yr = (y - 0.70) / 0.3;
   const tuck = 0.075 * smoothstep(0.60, 0.44, y);
   const fRear = (DIMS.XTAIL + 0.07 * zq / 0.81 + 0.03 * yr * yr + tuck) - P.x;
-  const fFront = P.x - (DIMS.XTIP - 0.08 * zq / 0.36 - 0.02 * yf * yf);
+  // crisp bonnet leading edge at ~0.40 m; the bumper face below it tucks back towards the intake
+  // the bonnet's leading edge (~0.39-0.41 m) is the most forward line; the bumper band below it
+  // leans back slightly to the intake lip, then tucks under towards the splitter
+  // ...with a raised lip running along the top of the intake (catches a crisp highlight)
+  const lipY = (y - 0.352) / 0.016;
+  const undercut = 0.03 * smoothstep(0.41, 0.30, y) + 0.04 * smoothstep(0.30, 0.18, y) - 0.016 * Math.exp(-lipY * lipY);
+  const fFront = P.x - (DIMS.XTIP - 0.08 * zq / 0.36 - undercut);
   f = smax(f, fFront, KNOSE);
   f = smax(f, fRear, KTAIL);
   return f;
