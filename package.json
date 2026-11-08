@@ -1,0 +1,15 @@
+{
+  "name": "ferrari-f-future-concept",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Procedural, interactive 3D model of the F-Future concept car (Three.js).",
+  "type": "module",
+  "scripts": {
+    "serve": "npx http-server . -p 8080 -c-1",
+    "shoot": "node tools/shoot.mjs",
+    "export:glb": "node tools/export-glb.mjs"
+  },
+  "devDependencies": {
+    "three": "0.187.0"
+  }
+}

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>F-Future Studio</title>
+  <meta name="description" content="Interactive real-time 3D model of the Ferrari F-Future concept (2025): butterfly doors, cockpit, naturally aspirated V12." />
+  <link rel="stylesheet" href="src/viewer/ui.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="stage" aria-label="3D view of the F-Future concept car"></canvas>
+
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader-inner">
+      <div class="brand"><span class="mark">F</span><span>F-FUTURE</span></div>
+      <div class="bar"><div class="fill" id="loaderFill"></div></div>
+      <div class="step" id="loaderStep">Initialising studio…</div>
+    </div>
+  </div>
+
+  <header id="titleBlock">
+    <div class="eyebrow">Concept 2025 · Design study</div>
+    <h1>FERRARI F-FUTURE</h1>
+    <div class="sub" id="modeSubtitle">Exterior showcase</div>
+  </header>
+
+  <nav id="modes" aria-label="Viewing modes">
+    <button data-mode="exterior" class="active"><span>01</span>Exterior</button>
+    <button data-mode="interior"><span>02</span>Cockpit</button>
+    <button data-mode="engine"><span>03</span>V12</button>
+    <button data-mode="engineering"><span>04</span>Engineering</button>
+  </nav>
+
+  <aside id="panel" aria-label="Controls">
+    <button id="panelToggle" aria-expanded="true" aria-controls="panelBody" title="Toggle controls">
+      <span class="chev"></span><span class="lbl">Controls</span>
+    </button>
+    <div id="panelBody">
+      <section>
+        <h2>Views</h2>
+        <div class="grid views">
+          <button data-view="threeQuarter">¾ Front</button>
+          <button data-view="front">Front</button>
+          <button data-view="side">Side</button>
+          <button data-view="rear">Rear</button>
+          <button data-view="top">Top</button>
+          <button data-view="rearQuarter">¾ Rear</button>
+        </div>
+        <button id="resetCam" class="wide">Reset camera</button>
+      </section>
+      <section>
+        <h2>Butterfly doors</h2>
+        <div class="grid two">
+          <button data-toggle="doorL" class="tog">Left door</button>
+          <button data-toggle="doorR" class="tog">Right door</button>
+        </div>
+        <button data-toggle="doorsBoth" class="wide tog">Both doors</button>
+      </section>
+      <section>
+        <h2>Access &amp; aero</h2>
+        <div class="grid two">
+          <button data-toggle="hood" class="tog">Front bonnet</button>
+          <button data-toggle="engineCover" class="tog">Engine cover</button>
+          <button data-toggle="wing" class="tog">Active wing</button>
+          <button data-toggle="lights" class="tog on">Lights</button>
+        </div>
+      </section>
+      <section>
+        <h2>Studio</h2>
+        <div class="grid two">
+          <button data-toggle="autorotate" class="tog">Turntable</button>
+          <button data-toggle="theme" class="tog">Dark studio</button>
+          <button data-toggle="xray" class="tog">X-ray body</button>
+          <button data-toggle="labels" class="tog">Design notes</button>
+        </div>
+        <label class="row">Quality
+          <select id="quality">
+            <option value="high">High (AO)</option>
+            <option value="balanced">Balanced</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+      </section>
+      <p class="hint">Drag to orbit · Scroll / pinch to zoom · Right-drag / two-finger to pan · Click doors, bonnet, engine cover or wing to operate · Double-click a part to focus</p>
+    </div>
+  </aside>
+
+  <div id="labels" aria-hidden="true"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="src/viewer/app.js"></script>
+</body>
+</html>
