@@ -58,11 +58,11 @@ function mirror(M, s) {
   // base on the door shoulder, stalk sweeping up/out/back, head housing
   const yb = 0.80;
   const zb = (surfaceZ(0.74, yb) ?? 0.82) - 0.004;
-  const pts = [[0.74, yb, zb], [0.70, 0.835, zb + 0.05], [0.64, 0.858, zb + 0.10], [0.585, 0.866, zb + 0.13]];
+  const pts = [[0.74, yb, zb], [0.70, 0.825, zb + 0.05], [0.64, 0.842, zb + 0.10], [0.585, 0.848, zb + 0.13]];
   const stalk = tube(pts.map(([x, y, z]) => [x, y, s * z]), 0.011, 10, 40);
   g.add(mesh(boxUV(stalk), M.carbon, 'Mirror_Stalk'));
   // head: a rounded wedge (teardrop in plan), carbon cap, glass facing rearward
-  const hx = 0.555, hy = 0.866, hz = zb + 0.17;
+  const hx = 0.555, hy = 0.848, hz = zb + 0.17;
   const head = new THREE.Group(); head.name = 'Mirror_Head';
   const sec = (t) => {
     // t along local z (inboard -> outboard)
@@ -94,7 +94,7 @@ function mirror(M, s) {
 function headlights(M) {
   const g = new THREE.Group(); g.name = 'Headlights';
   // polyline along the upper edge of the lamp (front-view coords |z|, y)
-  const upper = [[0.585, 0.482], [0.66, 0.516], [0.76, 0.556], [0.84, 0.582], [0.9, 0.588]];
+  const upper = [[0.584, 0.49], [0.66, 0.53], [0.74, 0.572], [0.82, 0.607], [0.875, 0.62], [0.912, 0.618]];
   for (const s of [-1, 1]) {
     const drl = [];
     for (const [z, y] of upper) {
@@ -104,16 +104,16 @@ function headlights(M) {
     }
     if (drl.length > 2) g.add(mesh(tube(drl, 0.0065, 8, 40), M.ledWhite, 'DRL_' + (s > 0 ? 'R' : 'L'), { cast: false }));
     // projector module at the inner end
-    const px = (surfaceX(0.465, s * 0.64, 1) ?? 2.25) - 0.04;
+    const px = (surfaceX(0.515, s * 0.68, 1) ?? 2.25) - 0.035;
     const proj = new THREE.Group(); proj.name = 'Projector';
     const bezel = new THREE.Mesh(lathe([[0.0, 0.0], [0.024, 0.0], [0.03, 0.01], [0.032, 0.025], [0.0, 0.025]], 24), M.lampChrome);
     const lens = new THREE.Mesh(new THREE.SphereGeometry(0.019, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.glassClear);
     lens.rotation.x = Math.PI / 2; lens.position.z = 0.02;
     proj.add(bezel, lens);
     proj.rotation.y = Math.PI / 2; // face +x
-    proj.position.set(px, 0.465, s * 0.645);
+    proj.position.set(px, 0.515, s * 0.68);
     g.add(proj);
-    const proj2 = proj.clone(); proj2.position.set((surfaceX(0.50, s * 0.73, 1) ?? 2.2) - 0.04, 0.5, s * 0.735); proj2.scale.setScalar(0.8);
+    const proj2 = proj.clone(); proj2.position.set((surfaceX(0.565, s * 0.79, 1) ?? 2.2) - 0.035, 0.565, s * 0.79); proj2.scale.setScalar(0.85);
     g.add(proj2);
   }
   return g;
@@ -127,14 +127,14 @@ function taillights(M) {
     const z = s * zc, y = 0.688;
     const x = (surfaceX(y, z, -1) ?? -2.1) + 0.012;
     const n = surfaceNormal(x - 0.012, y, z);
-    const t = new THREE.TorusGeometry(0.058, 0.0065, 10, 64);
+    const t = new THREE.TorusGeometry(0.064, 0.007, 10, 64);
     const o = new THREE.Object3D();
     o.position.set(x - 0.004, y, z);
     orientToNormal(o, n);
     o.updateMatrix();
     t.applyMatrix4(o.matrix);
     rings.push(t);
-    const d = new THREE.CircleGeometry(0.05, 40);
+    const d = new THREE.CircleGeometry(0.056, 40);
     const o2 = o.clone(); o2.position.set(x + 0.008, y, z); o2.updateMatrix();
     d.applyMatrix4(o2.matrix);
     inner.push(d);

@@ -60,26 +60,26 @@ function intake(M) {
     return [x - set - 0.1, y, z * 0.98];
   }, 40, 6);
   g.add(mesh(back, M.cavity, 'Intake_Radiators', { cast: false }));
-  // carbon blades dividing the intake (centre / sides)
-  const blades = [];
-  for (const zc of [-0.82, -0.30, 0.30, 0.82]) {
-    const pts = [];
-    for (let y = 0.125; y <= 0.4; y += 0.025) pts.push(y);
+  // thin dark vertical slats in the centre intake + one carbon vane across each side intake
+  const slats = [];
+  for (const zc of [-0.16, -0.08, 0, 0.08, 0.16]) {
     const outline = [];
-    for (const y of pts) outline.push([(surfaceX(y, zc, 1) ?? 2.1) + 0.012, y]);
-    for (const y of pts.slice().reverse()) outline.push([(surfaceX(y, zc, 1) ?? 2.1) - 0.2, y]);
-    const b = plate(outline, 0.014, 'xy', zc);
-    // angle the blades outward slightly
-    blades.push(b);
+    const ys = []; for (let y = 0.135; y <= 0.345; y += 0.03) ys.push(y);
+    for (const y of ys) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.03, y]);
+    for (const y of ys.slice().reverse()) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.14, y]);
+    slats.push(plate(outline, 0.008, 'xy', zc));
   }
-  g.add(mesh(UV(mergeGeometries(blades)), M.carbon, 'Intake_Blades'));
-  // centre strake and badge plinth
-  const cs = [];
-  const csOutline = [];
-  for (let y = 0.125; y <= 0.37; y += 0.03) csOutline.push([(surfaceX(y, 0, 1) ?? 2.4) - 0.005, y]);
-  for (let y = 0.37; y >= 0.125; y -= 0.03) csOutline.push([(surfaceX(y, 0, 1) ?? 2.4) - 0.16, y]);
-  cs.push(plate(csOutline, 0.01, 'xy', 0));
-  g.add(mesh(UV(mergeGeometries(cs)), M.carbon, 'Intake_CentreStrake'));
+  g.add(mesh(mergeGeometries(slats), M.blackSatin, 'Intake_CentreSlats'));
+  const vanes = [];
+  for (const s of [-1, 1]) {
+    const sec = (t) => {
+      const az = 0.45 + 0.44 * t, y = 0.255 + 0.04 * t;
+      const x = (surfaceX(y, s * Math.min(az, 0.88), 1) ?? 2.2) - 0.05;
+      return [[x + 0.01, y + 0.008, s * az], [x - 0.12, y + 0.02, s * az], [x - 0.12, y + 0.008, s * az], [x + 0.01, y - 0.004, s * az]];
+    };
+    vanes.push(sweep(sec, 24, { closed: true, caps: true }));
+  }
+  g.add(mesh(UV(mergeGeometries(vanes)), M.carbon, 'Intake_SideVanes'));
   return g;
 }
 

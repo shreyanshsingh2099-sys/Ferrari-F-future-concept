@@ -17,8 +17,9 @@ Each comparison stacks three panels top to bottom: the **reference**, **this mod
 
 | Check | Result |
 |---|---|
-| Side silhouette (roofline, windscreen, hood/fender line, deck), 63 points | mean error **4.9 mm**, 90 % within **8.4 mm** |
-| Plan outline (half-widths), 30 points | mean error **11 mm**, 90 % within **25 mm** |
+| Side silhouette (roofline, windscreen, hood/fender line, deck), 63 points | mean error **4.7 mm**, 90 % within **8.5 mm** |
+| Plan outline (half-widths), 30 points | mean error **11 mm**, 90 % within **23 mm** |
+| Hero render camera (recovered from 10 landmarks by `tools/fit_camera.py`) | **26 px RMS** on the 2576 px reference, so the hero comparison below is pixel-aligned |
 | Overall | 4.58 m long × 2.00 m wide × 1.156 m high, wheelbase 2.70 m |
 | Largest deviations | nose tip (the reference outline there includes the splitter's beak, modelled as a separate part) and a 2 cm softer windscreen header |
 
@@ -26,11 +27,11 @@ Each comparison stacks three panels top to bottom: the **reference**, **this mod
 
 | View | Comparison | Assessment |
 |---|---|---|
-| Side | ![](compare_side.png) | Roofline, fender line, wheel positions and sizes, door shut lines, mirror position, side window shape, scoop with Testarossa strakes, carbon lower body and skirts all match. **Deviation:** the reference's lower-rear sculpted carbon channel ahead of the rear wheel is shallower here. The rear face is taller and more upright than the reference's tapered tail. |
-| Front | ![](compare_front.png) | Width, fender positions, the bonnet vent's location and three fins, full-width intake with blades, splitter and badge position match. **Deviations:** the headlights are slimmer and less angular than the reference's large swept units. The bumper "cheeks" below the lights are less sculpted. |
+| Side | ![](compare_side.png) | Roofline, fender line, wheel positions and sizes, door shut lines, mirror, side window, the concave sweep from the mirror into the Testarossa scoop, the grey carbon lower body and the tucked tail with dark diffuser corners all match. **Deviation:** the reference's scoop blades are finer, with crisper edges. |
+| Front | ![](compare_front.png) | Width, fender positions, bonnet vent, the angled sabre headlights, the centre intake with slats, the side intakes with carbon vanes, the body-coloured fangs, the splitter and the badge position match. **Deviation:** the reference's fascia surfaces are more faceted. |
 | Rear | ![](compare_rear.png) | The quad ring tail-lights, full-width LED bar, black band, centre emblem, diffuser tunnels with fins and centre lamp, and the wing span with end plates and pylons match closely. **Added detail:** twin exhaust outlets in the band centre (the reference shows no tailpipes). |
 | Top | ![](compare_top.png) | Plan outline, bonnet vent, windscreen and roof, side windows, louvred engine cover, rear wing and mirrors are in place. The engine cover adds a glass section so the V12 is visible (interpretation). |
-| Three-quarter (reference hero angle) | ![](compare_hero.png) | Same camera angle as the hero render. Proportions, vent, strakes, wing, wheels and carbon zones agree. **Main remaining difference:** the reference's front fenders and headlight region are more muscular and sharper-edged. The reference also shows a darker showroom with a tighter lens. |
+| Three-quarter (reference hero angle) | ![](compare_hero.png) | Rendered from the **exact camera recovered from your hero render**, so the two images line up. Silhouette, wheel positions, wing, mirrors and nose are in the same place. Since the first version, these were remodelled to match: the front fascia (centre intake plus two large side intakes divided by body-coloured fangs), the black sabre headlights with LED brows, the scoop (body-coloured blades over a dark recess), the grey carbon lower body, the dark tail and diffuser corners, and the carbon cowl in front of the windscreen. **Remaining differences:** the reference's fender crests are sharper-edged, and its bonnet vent fins are more pronounced. |
 
 ## Requirement checklist (section 9 of the brief)
 

@@ -67,7 +67,7 @@ export function buildEngine(M) {
     }
     v12.add(mesh(mergeGeometries(hdr), M.titanium, 'ExhaustHeaders_' + (side > 0 ? 'R' : 'L')));
     // collector & downpipe to the silencer
-    v12.add(mesh(tube([[-1.40, 0.24, side * 0.30], [-1.6, 0.26, side * 0.30], [-1.8, 0.36, side * 0.26], [-1.9, 0.46, side * 0.2]], 0.035, 14, 40), M.titanium, 'ExhaustCollector'));
+    v12.add(mesh(tube([[-1.40, 0.24, side * 0.30], [-1.6, 0.26, side * 0.30], [-1.76, 0.34, side * 0.26], [-1.86, 0.44, side * 0.2]], 0.035, 14, 40), M.titanium, 'ExhaustCollector'));
   }
 
   // airbox in the vee with 12 velocity stacks on individual runners
@@ -122,11 +122,11 @@ export function buildEngine(M) {
   group.add(gb);
 
   // silencer and tail pipes to the twin outlets
-  const sil = new THREE.Mesh(rbox(0.22, 0.16, 0.6, 0.06), M.titanium); sil.position.set(-1.96, 0.55, 0); sil.name = 'Silencer';
+  const sil = new THREE.Mesh(rbox(0.18, 0.15, 0.56, 0.06), M.titanium); sil.position.set(-1.88, 0.55, 0); sil.name = 'Silencer';
   group.add(sil);
   for (const side of [-1, 1]) {
-    group.add(mesh(tube([[-1.9, 0.46, side * 0.2], [-1.95, 0.52, side * 0.18]], 0.035, 12, 10), M.titanium, 'ExhaustPipe'));
-    group.add(mesh(tube([[-2.0, 0.62, side * 0.1], [-2.06, 0.72, side * 0.1], [-2.09, 0.737, side * 0.1]], 0.026, 12, 20), M.titanium, 'TailPipe'));
+    group.add(mesh(tube([[-1.86, 0.44, side * 0.2], [-1.87, 0.50, side * 0.18]], 0.035, 12, 10), M.titanium, 'ExhaustPipe'));
+    group.add(mesh(tube([[-1.95, 0.6, side * 0.1], [-2.04, 0.72, side * 0.1], [-2.08, 0.737, side * 0.1]], 0.026, 12, 20), M.titanium, 'TailPipe'));
   }
   // dry-sump oil tank & coolant pipes to the side radiators
   const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 24), M.alu); tank.position.set(-0.62, 0.35, 0.38); tank.name = 'OilTank';

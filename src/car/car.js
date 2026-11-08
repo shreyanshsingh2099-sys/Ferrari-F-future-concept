@@ -28,7 +28,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 
 const MAT_KEYS = {
   paint: 'paint', carbonRed: 'carbonRed', carbon: 'carbon', carbonMatte: 'carbonMatte', glass: 'glass', glassEngine: 'glass',
-  blackGloss: 'blackGloss', blackSatin: 'blackSatin', cavity: 'cavity', lens: 'glassClear', lampBack: 'darkChrome',
+  blackGloss: 'blackGloss', blackSatin: 'blackSatin', cavity: 'cavity', lens: 'glassClear', lampBack: 'blackGloss',
   tailInner: 'blackGloss', paintInner: 'paintInner', doorShell: 'blackSatin',
 };
 
