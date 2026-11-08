@@ -10,7 +10,7 @@ import { buildCar } from '../car/car.js';
 
 const params = new URLSearchParams(location.search);
 const QA = params.has('qa');
-if (QA) document.body.classList.add('qa');
+if (QA && !params.has('ui')) document.body.classList.add('qa');
 
 const canvas = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: QA });
@@ -30,7 +30,7 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.target.set(0, 0.55, 0);
 controls.minDistance = 1.2;
-controls.maxDistance = 18;
+controls.maxDistance = 30;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.screenSpacePanning = true;
 controls.zoomToCursor = true;
@@ -113,10 +113,16 @@ function flyTo(pos, target, dur = 1.3, opts = {}) {
     camera.fov = fov0 + (fov1 - fov0) * e; camera.updateProjectionMatrix();
   } };
 }
+// keep the whole car framed on portrait / narrow screens
+function fitScale() { return Math.max(1, Math.pow(1.4 / camera.aspect, 0.95)); }
+function fitPos(pos, target) {
+  const k = fitScale();
+  return pos.map((p, i) => target[i] + (p - target[i]) * k);
+}
 function setView(name, dur = 1.3) {
   const v = VIEWS[name];
   if (!v) return;
-  flyTo(v.pos, v.target, dur, { fov: v.fov ?? 30 });
+  flyTo(fitPos(v.pos, v.target), v.target, dur, { fov: v.fov ?? 30 });
 }
 
 // orthographic QA camera (for comparison against the orthographic reference sheet)
@@ -146,7 +152,7 @@ function setMode(m) {
   mode = m;
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
   document.getElementById('modeSubtitle').textContent = MODES[m].label;
-  controls.minDistance = 1.2; controls.maxDistance = 18;
+  controls.minDistance = 1.2; controls.maxDistance = 30;
   controls.enablePan = true;
   car.setXray(m === 'engineering');
   syncToggle('xray', m === 'engineering');
@@ -166,10 +172,10 @@ function setMode(m) {
   } else if (m === 'engine') {
     car.set('engineCover', true);
     const f = car.anchors.engine.clone().applyMatrix4(car.root.matrixWorld);
-    flyTo([f.x - 2.3, f.y + 1.9, f.z - 1.7], f.toArray(), 1.6, { fov: 34 });
+    flyTo(fitPos([f.x - 2.3, f.y + 1.9, f.z - 1.7], f.toArray()), f.toArray(), 1.6, { fov: 34 });
   } else if (m === 'engineering') {
     car.set('engineCover', true); car.set('hood', true); car.set('doorL', true); car.set('doorR', true);
-    flyTo([4.4, 3.1, -5.0], [0, 0.45, 0], 1.6, { fov: 32 });
+    flyTo(fitPos([4.4, 3.1, -5.0], [0, 0.45, 0]), [0, 0.45, 0], 1.6, { fov: 32 });
   }
   syncAllToggles();
 }
@@ -320,7 +326,8 @@ async function main() {
   buildLabels();
   syncAllToggles();
   progress(1, 'Ready');
-  setTimeout(() => document.getElementById('loader').classList.add('done'), QA ? 0 : 250);
+  if (QA) document.getElementById('loader').remove();
+  else setTimeout(() => document.getElementById('loader').classList.add('done'), 250);
   const v = params.get('view') || 'hero';
   if (params.get('mode')) setMode(params.get('mode'));
   else setView(v, 0);
@@ -336,6 +343,14 @@ async function main() {
     ready: true, car, camera, controls, setView, setMode, flyTo, scene, renderer, studio,
     render: () => renderOnce(),
     // advance animations/tweens deterministically (used by the QA screenshot tool)
+    exportGLB: async () => {
+      const { exportGLB } = await import('./exporter.js');
+      const buf = await exportGLB(car);
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    },
     pickAt: (px, py) => {
       const r = canvas.getBoundingClientRect();
       ndc.set((px / r.width) * 2 - 1, -(py / r.height) * 2 + 1);

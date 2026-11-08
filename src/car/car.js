@@ -181,6 +181,7 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
       if (instant) { art[n].t = art[n].target; art[n].apply(ease(art[n].t)); }
     },
     toggle(n) { api.set(n, !state[n]); },
+    applyArticulation(n, e) { art[n]?.apply(e); },
     setLights(on) {
       api.lightsOn = on;
       lightMats.forEach((m, i) => { m.emissiveIntensity = on ? lightBase[i] : 0.0; });

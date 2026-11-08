@@ -65,7 +65,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #panel button:not(#panelToggle) { border: 1px solid var(--line); background: var(--glass-strong); border-radius: 9px; padding: 8px 6px; font-size: 11.5px; letter-spacing: 0.02em; transition: background 0.15s, border-color 0.15s, color 0.15s; }
 #panel button:hover { border-color: var(--ink-soft); }
 #panel button.wide { width: 100%; margin-top: 6px; }
-#panel button.tog.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+#panel button.tog.on:not(#panelToggle) { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 #panel .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11.5px; }
 #panel select { font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--glass-strong); color: var(--ink); }
 .hint { font-size: 10.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }

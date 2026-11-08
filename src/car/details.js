@@ -180,7 +180,7 @@ function wiper(M) {
   for (let i = 0; i <= 10; i++) {
     const z = -0.42 + 0.84 * (i / 10);
     const x = 1.24 - 0.02 * Math.cos((i / 10) * Math.PI);
-    const y = (surfaceY(x, z) ?? 0.76) + 0.008;
+    const y = (surfaceY(x, z) ?? 0.76) + 0.003;
     pts.push([x, y, z]);
   }
   g.add(mesh(tube(pts, 0.005, 6, 40), M.blackSatin, 'Wiper_Blade'));

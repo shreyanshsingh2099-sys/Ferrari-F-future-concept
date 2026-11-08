@@ -84,7 +84,7 @@ function frunk(M) {
   const mat = M.blackSatin.clone(); mat.side = THREE.DoubleSide; mat.name = 'Frunk_Felt'; mat.roughness = 0.95;
   g.add(mesh(geo, mat, 'Frunk_Tub', { cast: false }));
   // reservoir caps & strut brace visible when open
-  const brace = rod([1.75, 0.66, -0.52], [1.75, 0.66, 0.52], 0.018, 12);
+  const brace = rod([1.98, 0.5, -0.5], [1.98, 0.5, 0.5], 0.018, 12);
   g.add(mesh(brace, M.alu, 'Front_StrutBrace'));
   for (const [x, z, c] of [[1.62, 0.33, M.yellow], [1.62, -0.3, M.blackGloss]]) {
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 24), c);
