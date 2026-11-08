@@ -12,10 +12,12 @@ function softboxEnvironment(renderer, theme) {
     uniforms: {
       top: { value: new THREE.Color(light ? 0x1c1e22 : 0x2c2f35) },
       mid: { value: new THREE.Color(light ? 0x0e0f12 : 0x1a1c20) },
-      bot: { value: new THREE.Color(light ? 0x060607 : 0x0b0c0e) },
+      bot: { value: new THREE.Color(light ? 0x060607 : 0x34363b) },
+      // bright horizon band (the studio walls): gives clean light rims on silhouettes and crests
+      hor: { value: new THREE.Color(light ? 0x2a2c30 : 0x8c9198) },
     },
     vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader: 'uniform vec3 top,mid,bot; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.0 ? mix(mid,top,smoothstep(0.0,0.7,h)) : mix(mid,bot,smoothstep(0.0,-0.25,h)); gl_FragColor=vec4(c,1.); }',
+    fragmentShader: 'uniform vec3 top,mid,bot,hor; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.0 ? mix(mid,top,smoothstep(0.0,0.7,h)) : mix(mid,bot,smoothstep(0.0,-0.25,h)); c = mix(c, hor, exp(-h*h/0.012)); gl_FragColor=vec4(c,1.); }',
   });
   env.add(new THREE.Mesh(new THREE.SphereGeometry(50, 48, 24), domeMat));
   const box = (w, h, x, y, z, intensity, color = 0xffffff, lookAt = [0, 0.6, 0]) => {
@@ -40,7 +42,7 @@ function softboxEnvironment(renderer, theme) {
   box(2.5, 2.5, 5, 1.2, -6, 2.2 * k, 0xffe2c4);
   box(2.5, 2.5, -5, 1.2, 6, 2.0 * k, 0xdfe8ff);
   // floor bounce
-  const fl = new THREE.Mesh(new THREE.CircleGeometry(30, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(light ? 0x0c0c0e : 0x26282c) }));
+  const fl = new THREE.Mesh(new THREE.CircleGeometry(30, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color(light ? 0x0c0c0e : 0x55585e) }));
   fl.rotation.x = -Math.PI / 2; fl.position.y = -0.01; env.add(fl);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);

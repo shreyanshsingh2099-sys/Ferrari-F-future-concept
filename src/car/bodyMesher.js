@@ -105,20 +105,27 @@ export function meshBody({ rings = 640, half = 196, rays = 480 } = {}) {
     const e = 2e-4;
     for (let j = 0; j <= half; j++) {
       let [z, y, arc] = pts[j];
-      // one Newton projection step for accuracy
-      let gy = (field(P, y + e, z) - field(P, y - e, z)) / (2 * e);
+      // snap onto the surface along the ray from the section centre (radial bisection): unlike a
+      // gradient (Newton) step this keeps the vertex order, so sharp crests never fold
+      {
+        const dz0 = z, dy0 = y - yc, r0 = Math.hypot(dz0, dy0);
+        if (r0 > 1e-6) {
+          const ux = dz0 / r0, uy = dy0 / r0;
+          let lo = r0 - 0.012, hi = r0 + 0.012;
+          if (field(P, yc + uy * lo, ux * lo) < 0 && field(P, yc + uy * hi, ux * hi) > 0) {
+            for (let it = 0; it < 18; it++) { const m = (lo + hi) / 2; if (field(P, yc + uy * m, ux * m) < 0) lo = m; else hi = m; }
+            const r = (lo + hi) / 2;
+            y = yc + uy * r; if (j !== 0 && j !== half) z = ux * r;
+          }
+        }
+      }
+      const gy = (field(P, y + e, z) - field(P, y - e, z)) / (2 * e);
       let gz = (field(P, y, z + e) - field(P, y, z - e)) / (2 * e);
-      const f0 = field(P, y, z);
-      const g2 = gy * gy + gz * gz;
-      if (g2 > 1e-8 && Math.abs(f0) < 0.01) { y -= (f0 * gy) / g2; if (j !== 0 && j !== half) z -= (f0 * gz) / g2; }
-      gy = (field(P, y + e, z) - field(P, y - e, z)) / (2 * e);
-      gz = (field(P, y, z + e) - field(P, y, z - e)) / (2 * e);
-      let gx = (field(Pp, y, z) - field(Pm, y, z)) / (2 * hx);
+      const gx = (field(Pp, y, z) - field(Pm, y, z)) / (2 * hx);
       if (j === 0 || j === half) gz = 0;
       const l = Math.hypot(gx, gy, gz) || 1;
-      gx /= l; gy /= l; gz /= l;
-      ids[j] = mesh.addVertex(x, y, z, gx, gy, gz, x, arc);
-      if (j > 0 && j < half) ids[2 * half - j] = mesh.addVertex(x, y, -z, gx, gy, -gz, x, 2 * total - arc);
+      ids[j] = mesh.addVertex(x, y, z, gx / l, gy / l, gz / l, x, arc);
+      if (j > 0 && j < half) ids[2 * half - j] = mesh.addVertex(x, y, -z, gx / l, gy / l, -gz / l, x, 2 * total - arc);
     }
     ringIdx.push(ids);
   }

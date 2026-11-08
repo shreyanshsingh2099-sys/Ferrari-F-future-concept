@@ -157,6 +157,13 @@ export function createMaterials({ paint = 0x96101a } = {}) {
     clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 1.0,
     anisotropy: carbon ? 0.6 : 0, anisotropyMap: carbon?.aniso ?? null,
   });
+  // darker, high-gloss carbon for the bonnet vent panel and Fluxus fins (reads near-black like the
+  // reference, with crisp clear-coat highlights along every edge)
+  M.carbonDark = new THREE.MeshPhysicalMaterial({
+    name: 'Carbon_DarkGloss', color: 0x4a4a4e, map: carbon?.map ?? null, metalness: 0.2, roughness: 0.3,
+    clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 1.2,
+    anisotropy: carbon ? 0.5 : 0, anisotropyMap: carbon?.aniso ?? null,
+  });
   M.carbonMatte = new THREE.MeshPhysicalMaterial({
     name: 'Carbon_Satin', color: 0xd0d0d0, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.5,
     clearcoat: 0.3, clearcoatRoughness: 0.35, envMapIntensity: 0.8,
@@ -248,7 +255,7 @@ export function createMaterials({ paint = 0x96101a } = {}) {
 
   // Body panels are double sided: the inside of the shell renders as a dark trim lining
   // (so the cockpit and open door apertures never reveal the background through a panel).
-  for (const k of ['paint', 'carbonRed', 'blackGloss', 'carbon']) lineBackface(M[k]);
+  for (const k of ['paint', 'carbonRed', 'blackGloss', 'carbon', 'carbonDark']) lineBackface(M[k]);
 
   M.liner = new THREE.MeshStandardMaterial({ name: 'Wheelarch_Liner', color: 0x0b0b0c, roughness: 0.95, side: THREE.DoubleSide });
   M.underbody = new THREE.MeshStandardMaterial({ name: 'Underbody', color: 0x0d0d0e, roughness: 0.8 });
@@ -261,7 +268,13 @@ function lineBackface(mat) {
   mat.shadowSide = THREE.FrontSide;
   mat.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>
-      if (!gl_FrontFacing) gl_FragColor.rgb = vec3(0.016, 0.016, 0.018);`);
+      // dark lining only where a back face is actually seen (interior views); edge-on back faces at a
+      // crest's silhouette keep their lit colour, so sharp fender ridges show no dark fringe
+      if (!gl_FrontFacing) {
+        float facing = abs(dot(geometryNormal, geometryViewDir));
+        if (facing < 0.22) discard;
+        gl_FragColor.rgb = vec3(0.016, 0.016, 0.018);
+      }`);
   };
   mat.customProgramCacheKey = () => 'lined-' + mat.name;
 }
