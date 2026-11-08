@@ -81,7 +81,10 @@ export class MeshData {
     const f = new Float64Array(nv);
     for (let i = 0; i < nv; i++) f[i] = fn(P[3 * i], P[3 * i + 1], P[3 * i + 2]);
     // avoid exact zeros (degenerate splits)
-    for (let i = 0; i < nv; i++) if (f[i] === 0) f[i] = 1e-12;
+    let anyIn = false, anyOut = false;
+    for (let i = 0; i < nv; i++) { if (f[i] === 0) f[i] = 1e-12; if (f[i] < 0) anyIn = true; else anyOut = true; }
+    if (!anyIn) { const o = this; o.cut = new Set(); return { inside: new MeshData(), outside: o }; }
+    if (!anyOut) { const o = this; o.cut = new Set(); return { inside: o, outside: new MeshData() }; }
 
     const pos = P.slice(), nrm = N.slice(), uv = U.slice();
     const edgeCache = new Map();
@@ -117,7 +120,8 @@ export class MeshData {
       solo.push(p, pq, pr);
       pair.push(pq, q, r, pq, r, pr);
     }
-    return { inside: compact(pos, nrm, uv, inIdx), outside: compact(pos, nrm, uv, outIdx) };
+    const inside = compact(pos, nrm, uv, inIdx, nv), outside = compact(pos, nrm, uv, outIdx, nv);
+    return { inside, outside };
   }
 
   /** Keep only the part where fn < 0 (convenience). */
@@ -131,6 +135,45 @@ export class MeshData {
     const a = this.split((x, y, z) => fn(x, y, z) - g);
     const b = a.inside.split((x, y, z) => fn(x, y, z) + g);
     return { inside: b.inside, outside: a.outside, strip: b.outside };
+  }
+
+  /**
+   * Boundary chains made only of edges whose two vertices belong to `only` (a Set),
+   * e.g. the vertices created by the last split. Returns [{ verts, closed }].
+   */
+  boundaryChains(only = null) {
+    const I = this.idx;
+    const edges = new Set();
+    const key = (a, b) => a * 4194304 + b;
+    const tris = [];
+    for (let t = 0; t < I.length; t += 3) {
+      if (only) {
+        let c = 0;
+        if (only.has(I[t])) c++;
+        if (only.has(I[t + 1])) c++;
+        if (only.has(I[t + 2])) c++;
+        if (c < 2) continue;
+      }
+      tris.push(t);
+      for (let k = 0; k < 3; k++) edges.add(key(I[t + k], I[t + ((k + 1) % 3)]));
+    }
+    const next = new Map(), hasIn = new Set();
+    for (const t of tris) for (let k = 0; k < 3; k++) {
+      const a = I[t + k], b = I[t + ((k + 1) % 3)];
+      if (edges.has(key(b, a))) continue;
+      if (only && !(only.has(a) && only.has(b))) continue;
+      next.set(a, b); hasIn.add(b);
+    }
+    const chains = [], used = new Set();
+    const walk = (s) => {
+      const verts = [s]; used.add(s);
+      let c = next.get(s), guard = 0;
+      while (c !== undefined && c !== s && !used.has(c) && guard++ < 1e6) { verts.push(c); used.add(c); c = next.get(c); }
+      return { verts, closed: c === s };
+    };
+    for (const s of next.keys()) if (!hasIn.has(s) && !used.has(s)) chains.push(walk(s));
+    for (const s of next.keys()) if (!used.has(s)) chains.push(walk(s));
+    return chains.filter((c) => c.verts.length >= 2);
   }
 
   /** Ordered boundary loops (arrays of vertex indices following triangle winding). */
@@ -185,7 +228,7 @@ export class MeshData {
    * Returns a new MeshData (the wall), and attaches .bottomLoops (positions) for capping.
    */
   hem(opts = {}) {
-    const loops = opts.loops || this.boundaryLoops();
+    const chains = opts.chains || (opts.loops ? opts.loops.map((v) => ({ verts: v, closed: true })) : this.boundaryChains(opts.only || null));
     const depth = opts.depth ?? 0.03;
     const steps = opts.steps ?? 2;
     const inset = opts.inset ?? 0;
@@ -193,13 +236,14 @@ export class MeshData {
     const out = new MeshData();
     const P = this.pos, N = this.nrm;
     out.bottomLoops = [];
-    for (const loop of loops) {
+    for (const chain of chains) {
+      const loop = chain.verts, closed = chain.closed;
       const n = loop.length;
-      if (n < 3) continue;
+      if (n < 2) continue;
       // per-vertex outward (away from piece) tangent directions
       const outward = [];
       for (let i = 0; i < n; i++) {
-        const a = loop[(i - 1 + n) % n], b = loop[i], c = loop[(i + 1) % n];
+        const a = closed ? loop[(i - 1 + n) % n] : loop[Math.max(i - 1, 0)], b = loop[i], c = closed ? loop[(i + 1) % n] : loop[Math.min(i + 1, n - 1)];
         const ex = P[3 * c] - P[3 * a], ey = P[3 * c + 1] - P[3 * a + 1], ez = P[3 * c + 2] - P[3 * a + 2];
         const nx = N[3 * b], ny = N[3 * b + 1], nz = N[3 * b + 2];
         // outward = edgeDir x normal
@@ -240,7 +284,7 @@ export class MeshData {
       }
       for (let s = 0; s < steps; s++) {
         const r0 = rings[s], r1 = rings[s + 1];
-        for (let i = 0; i < n; i++) {
+        for (let i = 0; i < (closed ? n : n - 1); i++) {
           const j = (i + 1) % n;
           out.addTri(r0[i], r1[i], r1[j]);
           out.addTri(r0[i], r1[j], r0[j]);
@@ -290,18 +334,20 @@ export class MeshData {
   }
 }
 
-function compact(pos, nrm, uv, idx) {
+function compact(pos, nrm, uv, idx, firstNew = Infinity) {
   const m = new MeshData();
-  const remap = new Map();
+  const remap = new Int32Array(pos.length / 3).fill(-1);
+  m.cut = new Set();
   for (let i = 0; i < idx.length; i++) {
     const v = idx[i];
-    let r = remap.get(v);
-    if (r === undefined) {
+    let r = remap[v];
+    if (r < 0) {
       r = m.pos.length / 3;
       m.pos.push(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2]);
       m.nrm.push(nrm[3 * v], nrm[3 * v + 1], nrm[3 * v + 2]);
       m.uv.push(uv[2 * v], uv[2 * v + 1]);
-      remap.set(v, r);
+      remap[v] = r;
+      if (v >= firstNew) m.cut.add(r);
     }
     m.idx.push(r);
   }

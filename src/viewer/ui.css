@@ -92,4 +92,4 @@ button { font: inherit; color: inherit; cursor: pointer; }
   #modes button span { display: none; }
   .note .card { max-width: 160px; font-size: 10px; }
 }
-body.qa #panel, body.qa #modes, body.qa #titleBlock, body.qa #labels, body.qa #toast { display: none !important; }
+body.qa #loader, body.qa #panel, body.qa #modes, body.qa #titleBlock, body.qa #labels, body.qa #toast { display: none !important; }

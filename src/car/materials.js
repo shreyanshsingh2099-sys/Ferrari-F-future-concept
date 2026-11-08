@@ -153,17 +153,17 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   });
   M.paintInner = new THREE.MeshStandardMaterial({ name: 'Paint_Inner', color: 0x5a060c, metalness: 0.3, roughness: 0.6 });
   M.carbon = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_Gloss', color: 0xffffff, map: carbon?.map ?? null, metalness: 0.15, roughness: 0.38,
-    clearcoat: 1.0, clearcoatRoughness: 0.04,
+    name: 'Carbon_Gloss', color: 0xb8b8b8, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.42,
+    clearcoat: 0.9, clearcoatRoughness: 0.06, envMapIntensity: 0.55,
     anisotropy: carbon ? 0.6 : 0, anisotropyMap: carbon?.aniso ?? null,
   });
   M.carbonMatte = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_Satin', color: 0xffffff, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.5,
-    clearcoat: 0.4, clearcoatRoughness: 0.35,
+    name: 'Carbon_Satin', color: 0x9a9a9a, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.55,
+    clearcoat: 0.3, clearcoatRoughness: 0.4, envMapIntensity: 0.45,
   });
   M.carbonRed = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_RossoTint', color: 0xffffff, map: carbonRed?.map ?? null, metalness: 0.2, roughness: 0.36,
-    clearcoat: 1.0, clearcoatRoughness: 0.04, anisotropy: carbonRed ? 0.5 : 0, anisotropyMap: carbonRed?.aniso ?? null,
+    name: 'Carbon_RossoTint', color: 0xd0d0d0, map: carbonRed?.map ?? null, metalness: 0.2, roughness: 0.4,
+    clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.7, anisotropy: carbonRed ? 0.5 : 0, anisotropyMap: carbonRed?.aniso ?? null,
   });
   M.glass = new THREE.MeshPhysicalMaterial({
     name: 'Glass_Tinted', color: 0x6c7480, metalness: 0, roughness: 0.02, transmission: 1, thickness: 0.004,
