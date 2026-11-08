@@ -83,11 +83,11 @@ const timer = new THREE.Timer();
 const VIEWS = {
   threeQuarter: { pos: [5.6, 1.55, -4.6], target: [0.1, 0.5, 0] },
   front: { pos: [8.5, 0.62, 0], target: [0, 0.55, 0] },
-  side: { pos: [0.15, 0.62, -9.2], target: [0.15, 0.55, 0] },
+  side: { pos: [0.15, 0.62, -8.0], target: [0.15, 0.55, 0] },
   rear: { pos: [-8.5, 0.75, 0], target: [0, 0.55, 0] },
   top: { pos: [0.15, 10.5, 0.0001], target: [0.15, 0, 0] },
   rearQuarter: { pos: [-5.4, 1.7, -4.7], target: [-0.2, 0.55, 0] },
-  hero: { pos: [5.3, 1.25, -4.2], target: [0.2, 0.5, 0] },
+  hero: { pos: [4.75, 1.75, -3.55], target: [0.35, 0.45, 0], fov: 32 },
 };
 
 let tween = null;
@@ -328,10 +328,20 @@ async function main() {
   if (params.has('labels')) { labelsOn = true; showLabels(true); }
   if (params.get('xray')) car.setXray(true);
   if (params.get('ortho')) orthoCam = makeOrtho(params.get('ortho'));
+  if (params.get('cam')) {
+    const c = params.get('cam').split(',').map(Number), t = (params.get('target') || '0,0.5,0').split(',').map(Number);
+    flyTo(c, t, 0, { fov: +(params.get('fov') || 30) });
+  }
   window.__qa = {
     ready: true, car, camera, controls, setView, setMode, flyTo, scene, renderer, studio,
     render: () => renderOnce(),
     // advance animations/tweens deterministically (used by the QA screenshot tool)
+    pickAt: (px, py) => {
+      const r = canvas.getBoundingClientRect();
+      ndc.set((px / r.width) * 2 - 1, -(py / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      return ray.intersectObject(car.root, true).slice(0, 3).map((h) => `${h.object.name} [${h.object.parent?.name}] @ ${h.point.toArray().map((v) => v.toFixed(3)).join(',')}`);
+    },
     step: (seconds = 3, fps = 30) => { for (let i = 0; i < seconds * fps; i++) advance(1 / fps); },
   };
   if (!QA) renderer.setAnimationLoop(loop);
@@ -363,5 +373,6 @@ function advance(dt) {
 
 main().catch((err) => {
   console.error(err);
+  window.__qaError = String(err && err.stack || err);
   loaderStep.textContent = 'Error: ' + err.message;
 });

@@ -36,11 +36,14 @@ for (const v of views) {
   const url = `http://localhost:${port}/index.html?qa=1&w=${W}&h=${H}&${q}&${extra}`;
   const t0 = Date.now();
   await page.goto(url);
-  await page.waitForFunction(() => window.__qa && window.__qa.ready, null, { timeout: 180000 });
+  await page.waitForFunction(() => (window.__qa && window.__qa.ready) || window.__qaError, null, { timeout: 180000 });
+  const err = await page.evaluate(() => window.__qaError);
+  if (err) { console.log('BUILD ERROR', err); continue; }
   await page.evaluate(() => { window.__qa.step(4); window.__qa.render(); });
   const file = path.join(outDir, `${v.replace(':', '_')}.png`);
   await page.screenshot({ path: file, timeout: 120000 });
   const stats = await page.evaluate(() => window.__qa.car.stats);
+  if (process.env.PICK) for (const pt of process.env.PICK.split(';')) { const [px, py] = pt.split(',').map(Number); console.log('pick', pt, JSON.stringify(await page.evaluate(([a, b]) => window.__qa.pickAt(a, b), [px, py]))); }
   console.log('shot', file, (Date.now() - t0) + 'ms', JSON.stringify(stats));
 }
 await browser.close();

@@ -4,7 +4,7 @@
 // Every cut edge receives a "hem": a return flange that gives the panel its
 // thickness, forms door jambs, vent walls, intake ducts and light housings.
 import { meshBody } from './bodyMesher.js';
-import { makeFieldCache } from './bodyShape.js';
+import { makeFieldCache, surfaceNormal } from './bodyShape.js';
 import { sdCircle, sdBox, sdPolygon, smoothPolygon, polygonSDF } from '../core/sdf2d.js';
 import { pchip } from '../core/math.js';
 import { DIMS } from './dims.js';
@@ -95,7 +95,7 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   }
 
   // ---------------- headlights ----------------
-  const headHalf = smoothPolygon([[0.588, 0.432], [0.62, 0.448], [0.80, 0.528], [0.875, 0.548], [0.912, 0.566], [0.892, 0.588], [0.80, 0.578], [0.64, 0.50], [0.576, 0.478], [0.566, 0.452]], 6);
+  const headHalf = smoothPolygon([[0.59, 0.424], [0.63, 0.442], [0.80, 0.522], [0.875, 0.544], [0.915, 0.566], [0.895, 0.592], [0.80, 0.584], [0.64, 0.51], [0.574, 0.484], [0.562, 0.448]], 6);
   const headR = polygonSDF(headHalf);
   const headFn = (x, y, z) => Math.max(headR(az(z), y), 1.95 - x, 0.38 - y);
   {
@@ -140,15 +140,17 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
     const p = F.params(x);
     const yb = p.scBot + 0.018, yt = p.scTop - 0.016;
     const fy = Math.max(yb - y, y - yt);
-    return Math.max(fy, x + 0.715 > 0 ? x + 0.715 : -0.865 - x, 0.76 - az(z), y - (p.scTop - 0.03));
+    const f0 = Math.max(fy, x + 0.715 > 0 ? x + 0.715 : -0.865 - x, 0.76 - az(z), y - (p.scTop - 0.03));
+    if (f0 > 0.02) return f0;
+    const n = surfaceNormal(x, y, z);
+    return Math.max(f0, (0.55 - Math.abs(n[2])) * 0.2);
   };
   {
     const r = pcs.carve(scOpenFn, { remove: true });
-    pcs.hem(r.outside, { depth: 0.10, steps: 2, mat: 'carbonMatte' });
-    pcs.offsetCopies(r.inside, -0.10, 'cavity', 'body');
+    pcs.hem(r.outside, { depth: 0.045, steps: 2, mat: 'cavity' });
   }
   // dark slots between the Testarossa strakes (rear half of the scoop)
-  const slits = [[0.36, 0.47, 0.20], [0.585, 0.69, 0.02], [0.80, 0.885, -0.16]];
+  const slits = [[0.355, 0.415, 0.16], [0.585, 0.645, -0.02]];
   const slitFn = (x, y, z) => {
     if (x > 0.25 || x < -0.74) return 1;
     const p = F.params(x);
@@ -158,15 +160,17 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
     let best = 1;
     for (const [a, b, xs] of slits) {
       const fv = Math.max(a - v, v - b) * h; // distance in metres across
+      if (y > p.scTop - 0.022) continue;
       const fx = Math.max(x - xs, -0.705 - x);
       best = Math.min(best, Math.max(fv, fx));
     }
-    return Math.max(best, 0.6 - az(z));
+    if (best > 0.02) return best;
+    const n = surfaceNormal(x, y, z);
+    return Math.max(best, 0.6 - az(z), (0.82 - Math.abs(n[2])) * 0.2);
   };
   {
     const r = pcs.carve(slitFn, { parts: ['body', 'doorL', 'doorR'], remove: true });
-    pcs.hem(r.outside, { depth: 0.05, steps: 1, mat: 'cavity' });
-    pcs.offsetCopies(r.inside, -0.05, 'cavity');
+    pcs.hem(r.outside, { depth: 0.018, steps: 1, mat: 'cavity' });
   }
   const liOpenFn = (x, y, z) => {
     const p = F.params(x);

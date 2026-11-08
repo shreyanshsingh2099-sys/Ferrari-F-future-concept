@@ -111,8 +111,8 @@ function dashboard(M) {
     const az = Math.abs(z);
     const wsx = 1.0 + 0.2 * (1 - (az / 0.7) ** 2); // windscreen base moves forward at centre
     const wsy = (surfaceY(Math.min(wsx, 1.15), z) ?? 0.8) - 0.03;
-    const binn = Math.exp(-((z - DRV) / 0.13) ** 2); // driver binnacle bump
-    const cons = Math.exp(-(z / 0.12) ** 2);
+    const binn = Math.exp(-(((z - DRV) / 0.13) ** 2)); // driver binnacle bump
+    const cons = Math.exp(-((z / 0.12) ** 2));
     const faceX = 0.62 - 0.08 * binn + 0.02 * cons;
     const topY = 0.765 + 0.05 * binn;
     const pts = [

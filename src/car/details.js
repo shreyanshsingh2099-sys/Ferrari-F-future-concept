@@ -157,18 +157,19 @@ function exhaust(M) {
   const g = new THREE.Group(); g.name = 'ExhaustTips';
   for (const sg of [-1, 1]) {
     const zc = sg * 0.1, y = 0.737;
-    const x = (surfaceX(y, zc, -1) ?? -2.11) + 0.055;
-    // oval titanium outlet: tube profile scaled to an ellipse
-    const shape = new THREE.Shape(); shape.absellipse(0, 0, 0.075, 0.019, 0, Math.PI * 2);
-    const hole = new THREE.Path(); hole.absellipse(0, 0, 0.068, 0.0135, 0, Math.PI * 2); shape.holes.push(hole);
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: true, bevelSize: 0.002, bevelThickness: 0.002, bevelSegments: 2, curveSegments: 32 });
-    const tip = new THREE.Mesh(geo, M.titanium);
-    tip.rotation.y = -Math.PI / 2; // extrude along -x (rearward)
-    tip.position.set(x, y, zc);
-    tip.name = 'ExhaustTip';
-    const inner = new THREE.Mesh(new THREE.CircleGeometry(1, 24), M.cavity);
-    inner.scale.set(0.07, 0.015, 1); inner.rotation.y = -Math.PI / 2; inner.position.set(x - 0.005, y, zc);
-    g.add(tip, inner);
+    const x = (surfaceX(y, zc, -1) ?? -2.11) + 0.03;
+    // oval titanium sleeve (open lathe scaled to an ellipse), dark core
+    const sleeve = new THREE.Mesh(lathe([[0.03, -0.05], [0.031, -0.004], [0.033, 0.0], [0.03, 0.003], [0.027, -0.002], [0.026, -0.05]], 40), M.titanium);
+    sleeve.scale.set(1, 1, 1);
+    const holder = new THREE.Group();
+    holder.add(sleeve);
+    const core = new THREE.Mesh(new THREE.CircleGeometry(0.026, 32), M.cavity); core.position.z = -0.03;
+    holder.add(core);
+    holder.rotation.y = -Math.PI / 2; // local +z -> world -x (rearward)
+    holder.scale.set(2.4, 0.62, 1);
+    holder.position.set(x, y, zc);
+    holder.name = 'ExhaustTip_' + (sg > 0 ? 'R' : 'L');
+    g.add(holder);
   }
   return g;
 }

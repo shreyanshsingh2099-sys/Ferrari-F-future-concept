@@ -25,26 +25,17 @@ function splitter(M) {
   const poly = front.concat(back);
   const geo = plate(poly.map(([x, z]) => [x, z]), 0.014, 'xz');
   geo.translate(0, 0.098, 0);
-  g.add(mesh(UV(geo, 1), M.carbon, 'Splitter_Blade'));
-  // fences on top of the splitter inside the intake
-  const fences = [];
-  for (const zc of [-0.62, -0.12, 0.12, 0.62]) {
-    const xf = surfaceX(0.2, zc, 1) ?? 2.3;
-    const f = plate([[xf + 0.03, 0.098], [xf - 0.17, 0.098], [xf - 0.17, 0.2], [xf - 0.02, 0.135]], 0.008, 'xy', zc);
-    fences.push(f);
-  }
-  g.add(mesh(UV(mergeGeometries(fences)), M.carbon, 'Splitter_Fences'));
+  g.add(mesh(UV(geo, 1), M.carbonMatte, 'Splitter_Blade'));
   // corner dive planes (canards), two per side
   const dive = [];
   for (const s of [-1, 1]) {
     for (const [y, dx] of [[0.22, 0], [0.30, -0.03]]) {
       const zc = 0.86 * s;
       const x0 = (surfaceX(y, zc, 1) ?? 2.1);
-      const shape = [[x0 + 0.02, 0], [x0 - 0.12 + dx, 0], [x0 - 0.1 + dx, 0.075 * s], [x0 + 0.03, 0.03 * s]];
+      const shape = [[0.02, 0], [-0.12 + dx, 0], [-0.1 + dx, 0.075 * s], [0.03, 0.03 * s]];
       const gg = plate(shape, 0.006, 'xz');
-      // tilt the canard: raise the rear edge
-      gg.rotateZ(-0.12);
-      gg.translate(0, y, zc);
+      gg.rotateZ(-0.12); // raise the trailing edge (about the canard's own root)
+      gg.translate(x0, y, zc);
       dive.push(gg);
     }
   }
@@ -161,7 +152,7 @@ function sideSkirts(M) {
 function strakes(M) {
   // Testarossa-inspired blades running inside the side scoop
   const g = new THREE.Group(); g.name = 'SideStrakes';
-  const blades = [[0.30, 0.28], [0.52, 0.10], [0.74, -0.10]]; // [height fraction, start x]
+  const blades = [[0.30, 0.30], [0.52, 0.12], [0.73, -0.08]]; // [height fraction, start x]
   for (const s of [-1, 1]) {
     const geos = [];
     for (const [v, xs] of blades) {
@@ -174,14 +165,37 @@ function strakes(M) {
         const d = (x < 0.78 ? PROFILES.scDepth(x) : 0) * (0.25 + 0.75 * Math.sin(Math.min(1, v * 1.2) * Math.PI / 2));
         const tip = smoothstep(0, 0.18, t);
         const zo = zf + d * 0.92 * tip;
-        const th = 0.006 + 0.004 * tip;
+        const th = 0.008 + 0.01 * tip;
         return [[x, y - th / 2, s * (zf - 0.01)], [x, y - th / 2 + 0.006 * tip, s * zo], [x, y + th / 2 + 0.008 * tip, s * zo], [x, y + th / 2, s * (zf - 0.01)]];
       };
       const geo = sweep(sec, 48, { closed: true, caps: true });
-      if (s < 0) { const idx = geo.index.array; for (let i = 0; i < idx.length; i += 3) { const tmp = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = tmp; } geo.computeVertexNormals(); }
+      if (s > 0) { const idx = geo.index.array; for (let i = 0; i < idx.length; i += 3) { const tmp = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = tmp; } geo.computeVertexNormals(); }
       geos.push(geo);
     }
     g.add(mesh(mergeGeometries(geos), M.paint, s > 0 ? 'Strakes_R' : 'Strakes_L'));
+  }
+  return g;
+}
+
+function scoopGrilles(M) {
+  // honeycomb radiator grilles set just inside the scoop mouths and lower intakes
+  const g = new THREE.Group(); g.name = 'ScoopGrilles';
+  for (const s of [-1, 1]) {
+    const geo = grid((u, v) => {
+      const x = -0.705 - 0.17 * u;
+      const yb = PROFILES.scBot(x) + 0.01, yt = PROFILES.scTop(x) - 0.01;
+      const y = yb + (yt - yb) * v;
+      const z = (surfaceZ(-0.70, y) ?? 0.85) - 0.05 - 0.12 * u;
+      return [x, y, s * z];
+    }, 12, 10);
+    g.add(mesh(geo, M.grille, 'ScoopGrille_' + (s > 0 ? 'R' : 'L'), { cast: false }));
+    const geo2 = grid((u, v) => {
+      const x = -0.895 - 0.08 * u;
+      const y = 0.13 + (PROFILES.liTop(x) - 0.17) * v;
+      const z = (surfaceZ(-0.90, y) ?? 0.9) - 0.04 - 0.08 * u;
+      return [x, y, s * z];
+    }, 8, 8);
+    g.add(mesh(geo2, M.grille, 'LowerIntakeGrille_' + (s > 0 ? 'R' : 'L'), { cast: false }));
   }
   return g;
 }
@@ -256,7 +270,7 @@ function hoodFins(M) {
     for (const x of xs.slice().reverse()) outline.push([x, (surfaceY(x, zc) ?? 0.7) - 0.078]);
     geos.push(plate(outline, 0.011, 'xy', zc, 0.0015));
   }
-  return mesh(UV(mergeGeometries(geos)), M.carbon, 'Fluxus_DuctFins');
+  return mesh(UV(mergeGeometries(geos)), M.carbonMatte, 'Fluxus_DuctFins');
 }
 
 /** Engine cover louvre slats (parented to the engine cover). */
@@ -283,6 +297,7 @@ export function buildAero(M) {
   group.add(diffuser(M));
   group.add(sideSkirts(M));
   group.add(strakes(M));
+  group.add(scoopGrilles(M));
   const w = wing(M);
   group.add(w.assembly);
   group.traverse((o) => { if (o.isMesh) { o.castShadow ??= true; o.receiveShadow = true; } });

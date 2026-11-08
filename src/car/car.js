@@ -28,13 +28,13 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 
 const MAT_KEYS = {
   paint: 'paint', carbonRed: 'carbonRed', carbon: 'carbon', carbonMatte: 'carbonMatte', glass: 'glass', glassEngine: 'glass',
-  blackGloss: 'blackGloss', blackSatin: 'blackSatin', cavity: 'cavity', lens: 'glassClear', lampBack: 'lampChrome',
+  blackGloss: 'blackGloss', blackSatin: 'blackSatin', cavity: 'cavity', lens: 'glassClear', lampBack: 'darkChrome',
   tailInner: 'blackGloss', paintInner: 'paintInner', doorShell: 'blackSatin',
 };
 
 export const HINGES = {
   // butterfly door hinge axis: lower point near the A-pillar base, upper point at the top of the A-pillar
-  doorR: { a: new THREE.Vector3(0.905, 0.80, 0.70), b: new THREE.Vector3(0.47, 1.075, 0.445), angle: -1.18 },
+  doorR: { a: new THREE.Vector3(0.948, 0.835, 0.72), b: new THREE.Vector3(0.47, 1.075, 0.445), angle: 1.15 },
   hood: { p: new THREE.Vector3(1.405, 0.705, 0), angle: 0.72 },
   engineCover: { p: new THREE.Vector3(-0.52, 1.105, 0), angle: -0.95 },
 };

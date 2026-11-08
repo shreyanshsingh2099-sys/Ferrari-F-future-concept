@@ -86,7 +86,7 @@ function sideCut(P, y) {
     if (h > 1e-4) {
       const v = (y - P.scBot) / h;
       if (v > -0.05 && v < 1.0) {
-        const s = smoothstep(-0.05, 0.72, v) * (1 - smoothstep(0.86, 1.0, v));
+        const s = smoothstep(-0.05, 0.70, v) * (1 - smoothstep(0.80, 1.0, v));
         d += P.scD * s;
       }
     }

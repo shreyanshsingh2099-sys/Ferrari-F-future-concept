@@ -165,14 +165,15 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
     name: 'Carbon_RossoTint', color: 0xd0d0d0, map: carbonRed?.map ?? null, metalness: 0.2, roughness: 0.4,
     clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.7, anisotropy: carbonRed ? 0.5 : 0, anisotropyMap: carbonRed?.aniso ?? null,
   });
+  // Tinted glazing: transparent with strong (Fresnel) reflections. Cheaper and more robust
+  // than screen-space transmission and lets the cockpit be seen from outside.
   M.glass = new THREE.MeshPhysicalMaterial({
-    name: 'Glass_Tinted', color: 0x6c7480, metalness: 0, roughness: 0.02, transmission: 1, thickness: 0.004,
-    ior: 1.52, specularIntensity: 1, envMapIntensity: 1.3, side: THREE.DoubleSide,
-    attenuationColor: new THREE.Color(0x30353c), attenuationDistance: 0.02, transparent: false,
+    name: 'Glass_Tinted', color: 0x0e1114, metalness: 0.0, roughness: 0.03, transparent: true, opacity: 0.32,
+    envMapIntensity: 1.6, specularIntensity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02, side: THREE.DoubleSide, depthWrite: false,
   });
   M.glassClear = new THREE.MeshPhysicalMaterial({
-    name: 'Glass_Lens', color: 0xffffff, metalness: 0, roughness: 0.0, transmission: 1, thickness: 0.003,
-    ior: 1.5, side: THREE.DoubleSide, envMapIntensity: 1.5,
+    name: 'Glass_Lens', color: 0xdfe6ee, metalness: 0, roughness: 0.0, transparent: true, opacity: 0.18,
+    side: THREE.DoubleSide, envMapIntensity: 2.0, clearcoat: 1, depthWrite: false,
   });
   M.glassRed = new THREE.MeshPhysicalMaterial({
     name: 'Glass_RedLens', color: 0xb01010, metalness: 0, roughness: 0.05, transmission: 0.6, thickness: 0.004,
@@ -240,10 +241,24 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
   M.spring = new THREE.MeshStandardMaterial({ name: 'Spring_Yellow', color: 0xe8b400, metalness: 0.5, roughness: 0.35 });
   M.damper = new THREE.MeshStandardMaterial({ name: 'Damper_Body', color: 0x2b2d31, metalness: 0.9, roughness: 0.3 });
 
+  // Body panels are double sided: the inside of the shell renders as a dark trim lining
+  // (so the cockpit and open door apertures never reveal the background through a panel).
+  for (const k of ['paint', 'carbonRed', 'blackGloss', 'carbon']) lineBackface(M[k]);
+
   M.liner = new THREE.MeshStandardMaterial({ name: 'Wheelarch_Liner', color: 0x0b0b0c, roughness: 0.95, side: THREE.DoubleSide });
   M.underbody = new THREE.MeshStandardMaterial({ name: 'Underbody', color: 0x0d0d0e, roughness: 0.8 });
   M.paintInterior = new THREE.MeshStandardMaterial({ name: 'Body_InnerLining', color: 0x0d0d0d, roughness: 0.85, side: THREE.BackSide });
   return M;
+}
+
+function lineBackface(mat) {
+  mat.side = THREE.DoubleSide;
+  mat.shadowSide = THREE.FrontSide;
+  mat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>
+      if (!gl_FrontFacing) gl_FragColor.rgb = vec3(0.016, 0.016, 0.018);`);
+  };
+  mat.customProgramCacheKey = () => 'lined-' + mat.name;
 }
 
 /** Planar/box UV projection in metres for generated parts (for textures like carbon). */
