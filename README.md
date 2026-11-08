@@ -1,7 +1,8 @@
 # Ferrari F-Future — interactive 3D concept model
 
-A procedurally engineered, real-time 3D model of the **F-Future (2025)** concept, built from the two
-reference sheets in [`reference/`](reference/). Everything — body panels, glass, lights, aero, wheels,
+A procedurally engineered, real-time 3D model of the **F-Future (2025)** concept, built from the seven
+reference sheets in [`reference/`](reference/) (orthographic views, blueprint, technical spec, surface detail,
+complete design and annotated hero renders). Everything — body panels, glass, lights, aero, wheels,
 brakes, suspension, cockpit and the naturally aspirated V12 — is real geometry generated in code with
 Three.js. It runs in a browser studio with working butterfly doors, opening bonnet and engine cover, an
 active rear wing, four viewing modes and annotated design notes.

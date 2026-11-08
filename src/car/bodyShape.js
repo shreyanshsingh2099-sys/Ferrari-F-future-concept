@@ -46,9 +46,9 @@ export const PROFILES = {
   kRoof: P_([[1.3, 0.06], [0.5, 0.06], [0.0, 0.06], [-0.6, 0.07], [-1.5, 0.08]]),
 
   // ---- side sculpture: "Testarossa" scoop behind the door ----
-  scTop: P_([[0.78, 0.772], [0.4, 0.803], [0.0, 0.842], [-0.4, 0.884], [-0.74, 0.912], [-0.9, 0.92]]),
-  scBot: P_([[0.78, 0.772], [0.5, 0.705], [0.2, 0.66], [-0.2, 0.643], [-0.74, 0.64], [-0.9, 0.64]]),
-  scDepth: P_([[0.78, 0.0], [0.55, 0.045], [0.3, 0.09], [0.0, 0.13], [-0.3, 0.16], [-0.55, 0.18], [-0.72, 0.19], [-0.80, 0.10], [-0.86, 0.0]]),
+  scTop: P_([[0.92, 0.735], [0.6, 0.78], [0.2, 0.80], [-0.2, 0.805], [-0.6, 0.80], [-0.9, 0.80]]),
+  scBot: P_([[0.92, 0.715], [0.6, 0.63], [0.3, 0.585], [0.0, 0.565], [-0.4, 0.56], [-0.7, 0.575], [-0.9, 0.59]]),
+  scDepth: P_([[0.92, 0.0], [0.7, 0.025], [0.4, 0.055], [0.1, 0.085], [-0.2, 0.11], [-0.45, 0.13], [-0.6, 0.12], [-0.72, 0.075], [-0.82, 0.025], [-0.9, 0.0]]),
 
   // ---- lower side intake ahead of the rear wheel ----
   liTop: P_([[-0.42, 0.20], [-0.6, 0.31], [-0.8, 0.38], [-0.98, 0.42]]),
@@ -56,6 +56,23 @@ export const PROFILES = {
 };
 
 const PR = PROFILES;
+
+/** Testarossa scoop behind the door: dark recess crossed by body-coloured blades.
+ *  t runs 0 (pointed front tip) .. 1 (rear end, at the C-pillar base). */
+export const SCOOP = {
+  tip: -0.12, end: -0.64,
+  y: (t) => 0.722 - 0.032 * t,
+  h: (t) => 0.105 * Math.pow(Math.max(t, 0), 0.6),
+};
+/** depth of the side sweep at (x, y) — same law as the body field. */
+export function sweepDepth(x, y) {
+  if (!(x < 0.92 && x > -0.9)) return 0;
+  const top = PR.scTop(x), bot = PR.scBot(x), h = top - bot;
+  if (h < 1e-4) return 0;
+  const v = (y - bot) / h;
+  if (v < -0.05 || v > 1) return 0;
+  return PR.scDepth(x) * smoothstep(-0.05, 0.62, v) * (1 - smoothstep(0.84, 1.0, v));
+}
 const KNOSE = 0.05, KTAIL = 0.05;
 
 /** Evaluate all x-dependent parameters of a cross-section. */
@@ -68,7 +85,7 @@ export function params(x) {
     ym: PR.ym(x), aUp: PR.aUp(x), aDn: PR.aDn(x), ybot: PR.ybot(x), kSh: PR.kSh(x),
     roof: PR.roof(x), roofP: PR.roof.deriv(x), crown: PR.crown(x), wb: PR.wb(x), tanT: PR.tanT(x),
     yb: PR.ybRef(x), kBelt: PR.kBelt(x), kRoof: PR.kRoof(x),
-    scTop: PR.scTop(x), scBot: PR.scBot(x), scD: x < 0.78 && x > -0.86 ? PR.scDepth(x) : 0,
+    scTop: PR.scTop(x), scBot: PR.scBot(x), scD: x < 0.92 && x > -0.9 ? PR.scDepth(x) : 0,
     liTop: PR.liTop(x), liD: x < -0.40 && x > -0.985 ? PR.liDepth(x) : 0,
     fFront: x - DIMS.XTIP,
     fRear: DIMS.XTAIL - x,
@@ -86,7 +103,7 @@ function sideCut(P, y) {
     if (h > 1e-4) {
       const v = (y - P.scBot) / h;
       if (v > -0.05 && v < 1.0) {
-        const s = smoothstep(-0.05, 0.62, v) * (1 - smoothstep(0.93, 1.0, v));
+        const s = smoothstep(-0.05, 0.62, v) * (1 - smoothstep(0.84, 1.0, v));
         d += P.scD * s;
       }
     }
@@ -138,7 +155,8 @@ export function fieldCanopy(P, y, z) {
   const dz = (2 * P.crown * az) / 0.25;
   const fct = (y - ycab) / Math.sqrt(1 + P.roofP * P.roofP + dz * dz);
   let f = smax(fcs, fct, P.kRoof);
-  f = smax(f, P.yb - 0.30 - y, 0.05);
+  // the glass-house ends just below the beltline so the side sculpture never exposes it
+  f = smax(f, P.yb - 0.11 - y, 0.04);
   return f;
 }
 

@@ -23,6 +23,36 @@ Each comparison stacks three panels top to bottom: the **reference**, **this mod
 | Overall | 4.58 m long × 2.00 m wide × 1.156 m high, wheelbase 2.70 m |
 | Largest deviations | nose tip (the reference outline there includes the splitter's beak, modelled as a separate part) and a 2 cm softer windscreen header |
 
+## Newer reference sheets (ref-03 … ref-07)
+
+The blueprint, technical-spec, surface-detail, complete-design and annotated-hero sheets were calibrated
+separately (`tools/refs/`). Side views are scaled by the wheel hubs (2.70 m wheelbase), and the plan, front and rear views by the overall length or height.
+The complete-design sheet (ref-06) is a clean studio render, so it gives the most reliable outlines. Its side view measures
+4.57 m long and 1.12 m high, which agrees with the first sheet (4.58 m, 1.156 m), so the overall proportions were kept.
+
+| View (sheet 06) | Comparison (reference, model; then each with the other's outline traced) | Silhouette overlap (IoU), before → after this pass |
+|---|---|---|
+| Side | ![](compare_sheet06_s06.png) | 0.844 → **0.855** |
+| Top | ![](compare_sheet06_t06.png) | 0.956 → **0.959** |
+| Front | ![](compare_sheet06_f06.png) | 0.840 → **0.847** |
+| Rear | ![](compare_sheet06_r06.png) | 0.812 → **0.827** |
+
+Remodelled in this pass to match the new sheets:
+- **Side:** a concave sweep from the front of the door into the Testarossa scoop, which has three body-coloured
+  blades over a dark recess that narrows to a point. A **flying-buttress void** sits behind the door window
+  (replacing the old quarter window). The black box ahead of the rear wheel is gone.
+- **Front:** **steep, slim sabre headlights** with a tail that runs back along the fender. A **single wide intake with a
+  flat top**, split by angled body-coloured fangs, plus narrow **corner ducts**.
+- **Rear:** **two black "goggles"** each holding a pair of ring lights, with the LED line running over the paint between them.
+  A **dark full-width vent** under the ducktail. A **gull-wing** with pylons framing the rear window. An **arched twin-tunnel diffuser** with bold
+  fins. Round exhausts sit low in the diffuser centre instead of in the light band.
+- **Wheels:** **straight, twisted (propeller) spokes**, as in the wheel & brake detail panel.
+- **Engine cover:** satin carbon with a smoked window, so it reads dark as on the top and rear views.
+
+Remaining differences: the reference fascia and fender crests are more sharply faceted. The bonnet-vent fins and scoop
+blades are finer. The underbody plan shows more channels than the venturi floor here. The sheets themselves differ by
+a few centimetres in places (for example, the windscreen header height).
+
 ## View-by-view
 
 | View | Comparison | Assessment |

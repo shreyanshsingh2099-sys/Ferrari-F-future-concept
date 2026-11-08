@@ -171,6 +171,11 @@ export function createMaterials({ paint = 0x96101a } = {}) {
     name: 'Glass_Tinted', color: 0x0b0d10, metalness: 0.0, roughness: 0.1, transparent: true, opacity: 0.45,
     envMapIntensity: 0.45, specularIntensity: 0.35, clearcoat: 0.0, side: THREE.DoubleSide, depthWrite: false,
   });
+  // smoked engine-cover window: reads as dark carbon like the reference, V12 faintly visible
+  M.glassSmoked = new THREE.MeshPhysicalMaterial({
+    name: 'Glass_Smoked', color: 0x050608, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.78,
+    envMapIntensity: 0.6, clearcoat: 1, clearcoatRoughness: 0.04, side: THREE.DoubleSide, depthWrite: false,
+  });
   M.glassClear = new THREE.MeshPhysicalMaterial({
     name: 'Glass_Lens', color: 0x040506, metalness: 0, roughness: 0.04, transparent: true, opacity: 0.82,
     side: THREE.DoubleSide, envMapIntensity: 0.7, clearcoat: 1, clearcoatRoughness: 0.03, depthWrite: false,

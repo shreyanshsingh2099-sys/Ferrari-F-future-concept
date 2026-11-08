@@ -27,7 +27,7 @@ import { buildEngine } from './engine.js';
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 const MAT_KEYS = {
-  paint: 'paint', carbonRed: 'carbonRed', carbon: 'carbon', carbonMatte: 'carbonMatte', glass: 'glass', glassEngine: 'glass',
+  paint: 'paint', carbonRed: 'carbonRed', carbon: 'carbon', carbonMatte: 'carbonMatte', glass: 'glass', glassEngine: 'glassSmoked',
   blackGloss: 'blackGloss', blackSatin: 'blackSatin', cavity: 'cavity', lens: 'glassClear', lampBack: 'blackGloss',
   tailInner: 'blackGloss', paintInner: 'paintInner', doorShell: 'blackSatin',
 };
@@ -83,7 +83,8 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
   for (const [k, meshes] of groups) {
     const [part, mat] = k.split('|');
     let geo = meshes.length === 1 ? meshes[0].toGeometry() : mergeGeometries(meshes.map((m) => m.toGeometry()));
-    const material = M[MAT_KEYS[mat] || mat] || M.paint;
+    // the engine cover is satin carbon (dark, low-gloss) as on the reference top/rear views
+    const material = part === 'engineCover' && mat === 'carbon' ? M.carbonMatte : (M[MAT_KEYS[mat] || mat] || M.paint);
     const mesh = new THREE.Mesh(geo, material);
     mesh.name = `${part}_${mat}`;
     mesh.castShadow = !/glass|lens/.test(mat);
