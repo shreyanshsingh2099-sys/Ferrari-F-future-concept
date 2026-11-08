@@ -20,10 +20,10 @@ function archLiner(M, arch, track, width) {
     const shell = grid((u, v) => {
       const th = th0 + (th1 - th0) * u;
       const x = arch.x + Math.cos(th) * R, y = arch.y + Math.sin(th) * R;
-      const zo = (surfaceZ(x, y) ?? 0.95) - 0.012;
+      const zo = (surfaceZ(x, y) ?? 0.95) - 0.02;
       const z = zIn + (zo - zIn) * v;
       // stay under the body skin (the bonnet valley is lower than the arch top inboard)
-      const cap = (surfaceY(x, z) ?? 2) - 0.02;
+      const cap = (surfaceY(x, z) ?? 2) - 0.045;
       return [x, Math.min(y, cap), s * z];
     }, 48, 4);
     g.add(mesh(shell, M.liner, 'ArchLiner_Shell', { cast: false }));
@@ -32,7 +32,7 @@ function archLiner(M, arch, track, width) {
       const th = th0 + (th1 - th0) * u;
       const r = R * v;
       const x = arch.x + Math.cos(th) * r;
-      const cap = (surfaceY(x, zIn) ?? 2) - 0.02;
+      const cap = (surfaceY(x, zIn) ?? 2) - 0.045;
       return [x, Math.min(Math.max(floor, arch.y + Math.sin(th) * r), cap), s * zIn];
     }, 48, 3);
     g.add(mesh(wall, M.liner, 'ArchLiner_Wall', { cast: false }));

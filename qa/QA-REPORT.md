@@ -53,6 +53,19 @@ Remaining differences: the reference fascia and fender crests are more sharply f
 blades are finer. The underbody plan shows more channels than the venturi floor here. The sheets themselves differ by
 a few centimetres in places (for example, the windscreen header height).
 
+## Bonnet vent & pointed nose pass
+
+- **Ducti Fluxus fins:** four bold "fang" blades with a wedge section and a knife-edged top. Each sits proud of the
+  panel at the rear and sweeps down to a sharp point at the front of the opening. They sit over a black vent floor,
+  inside a **dark gloss-carbon panel** that frames the opening and widens back to the windscreen cowl, as in the top views.
+- **Pointed nose:** the bonnet now ends in a long, low **knife-edge beak** at about 0.38 m, as in the side view of the
+  complete-design sheet. The face is cut back hard under the beak into the intake mouth, and the splitter juts forward again below.
+  Nose top line against sheet 06 at x = 2.40 / 2.36 / 2.30 m: **0.397 / 0.404 / 0.424 m vs 0.383 / 0.392 / 0.400 m**
+  (previously 0.424 / 0.445 / 0.465 m). The side error against the first sheet rose to 7 mm, because that sheet draws
+  the nose taller; the two sheets disagree there.
+- **Rendering clean-ups:** a radial (order-preserving) surface snap in the body mesher. The arch liners sit deeper under the skin.
+  The studio reflections now have a bright horizon band and a mid-grey floor, so silhouettes and crests get clean light rims instead of dark fringes.
+
 ## Front-end sharpening pass
 
 The front bumper and fenders were sharpened against the front views and the colour-coded surface view (ref-05):

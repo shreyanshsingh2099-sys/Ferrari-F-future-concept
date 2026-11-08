@@ -178,10 +178,13 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   {
     const r = pcs.carve(ventFn, { parts: ['hood'], remove: true });
     pcs.hem(r.outside, { depth: 0.075, steps: 2, mat: 'carbonMatte', part: 'hood' });
-    pcs.offsetCopies(r.inside, -0.075, 'carbonMatte', 'hood');
+    pcs.offsetCopies(r.inside, -0.075, 'cavity', 'hood');
   }
+  // carbon vent panel: frames the opening and widens back to the windscreen cowl (top view)
+  const ventPanel = polygonSDF(smoothPolygon([[1.975, 0.0], [1.955, 0.235], [1.895, 0.335], [1.70, 0.36], [1.48, 0.385], [1.38, 0.41], [1.38, -0.41], [1.48, -0.385], [1.70, -0.36], [1.895, -0.335], [1.955, -0.235]], 4));
+  pcs.carve((x, y, z) => Math.max(ventPanel(x, z), 0.5 - y), { parts: ['hood'], mats: ['paint'], toMat: 'carbonDark' });
   // bonnet underside
-  pcs.offsetCopies(pcs.skin('hood', ['paint']), -0.028, 'carbonMatte', 'hood', true);
+  pcs.offsetCopies(pcs.skin('hood', ['paint', 'carbonDark']), -0.028, 'carbonMatte', 'hood', true);
 
   // ---------------- engine cover with louvres and V12 window ----------------
   const ecPoly = smoothPolygon(OUTLINES.engineCover, 4);

@@ -17,9 +17,9 @@ function splitter(M) {
   const front = [];
   let lastX = 2.2;
   for (let z = -0.9; z <= 0.9001; z += 0.03) {
-    let x = surfaceX(0.16, z, 1);
+    let x = surfaceX(0.375, z, 1);
     if (x == null || x < 1.9) x = lastX - 0.03; else lastX = x;
-    front.push([x + 0.035 - 0.02 * Math.pow(Math.abs(z) / 0.9, 4), z]);
+    front.push([x + 0.005 - 0.03 * Math.pow(Math.abs(z) / 0.9, 4), z]);
   }
   const back = [[1.80, 0.88], [1.92, 0.5], [1.96, 0.0], [1.92, -0.5], [1.80, -0.88]];
   const poly = front.concat(back);
@@ -241,19 +241,25 @@ function wing(M) {
 
 /** Bonnet Fluxus duct fins (parented to the bonnet). */
 function hoodFins(M) {
+  // Bold "fang" blades (Ducti Fluxus): flush with the bonnet at the rear, the top edge drops in a
+  // concave sweep to a sharp point at the front of the opening; wedge section, knife-edged top.
   const geos = [];
-  for (const zc of [-0.2, -0.07, 0.07, 0.2]) {
-    const xs = []; for (let i = 0; i <= 14; i++) xs.push(1.505 + (1.86 - 1.505) * (i / 14));
-    const outline = [];
-    for (const x of xs) {
-      const y = (surfaceY(x, zc) ?? 0.7);
-      const t = smoothstep(1.62, 1.86, x); // front part tapers into a fang
-      outline.push([x, y - 0.006 - t * 0.06]);
-    }
-    for (const x of xs.slice().reverse()) outline.push([x, (surfaceY(x, zc) ?? 0.7) - 0.078]);
-    geos.push(plate(outline, 0.011, 'xy', zc, 0.0015));
+  const fins = [[0.085, 1.928], [0.225, 1.905]]; // |z|, tip x
+  for (const [az, xTip] of fins) for (const s of [-1, 1]) {
+    const zc = s * az, x0 = 1.47, xs = 1.56, depth = 0.08;
+    const sec = (u) => {
+      const x = x0 + (xTip - x0) * u;
+      const ys = (surfaceY(x, zc) ?? 0.7);
+      const t = clamp((x - xs) / (xTip - xs), 0, 1);
+      const yTop = ys + 0.004 - (depth - 0.002) * Math.pow(t, 1.25); // proud of the panel at the rear
+      const yBot = ys - depth;
+      const k = 1 - 0.85 * Math.pow(t, 3); // blade thins towards the point
+      const wb = 0.03 * k, wt = 0.004 * k;
+      return [[x, yBot, zc - wb], [x, yBot, zc + wb], [x, yTop - 0.004, zc + wt], [x, yTop, zc], [x, yTop - 0.004, zc - wt]];
+    };
+    geos.push(sweep(sec, 40, { closed: true, caps: true }));
   }
-  return mesh(UV(mergeGeometries(geos)), M.blackGloss, 'Fluxus_DuctFins');
+  return mesh(UV(mergeGeometries(geos), 6), M.carbon, 'Fluxus_DuctFins');
 }
 
 /** Engine cover louvre slats (parented to the engine cover). */
