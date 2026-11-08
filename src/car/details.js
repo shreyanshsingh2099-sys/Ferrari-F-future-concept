@@ -94,7 +94,7 @@ function mirror(M, s) {
 function headlights(M) {
   const g = new THREE.Group(); g.name = 'Headlights';
   // polyline along the upper edge of the lamp (front-view coords |z|, y)
-  const upper = [[0.585, 0.478], [0.66, 0.508], [0.76, 0.548], [0.84, 0.573], [0.895, 0.585]];
+  const upper = [[0.585, 0.482], [0.66, 0.516], [0.76, 0.556], [0.84, 0.582], [0.9, 0.588]];
   for (const s of [-1, 1]) {
     const drl = [];
     for (const [z, y] of upper) {
@@ -102,7 +102,7 @@ function headlights(M) {
       if (x == null) continue;
       drl.push([x - 0.022, y - 0.014, s * (z - 0.004)]);
     }
-    if (drl.length > 2) g.add(mesh(tube(drl, 0.0045, 8, 40), M.ledWhite, 'DRL_' + (s > 0 ? 'R' : 'L'), { cast: false }));
+    if (drl.length > 2) g.add(mesh(tube(drl, 0.0065, 8, 40), M.ledWhite, 'DRL_' + (s > 0 ? 'R' : 'L'), { cast: false }));
     // projector module at the inner end
     const px = (surfaceX(0.465, s * 0.64, 1) ?? 2.25) - 0.04;
     const proj = new THREE.Group(); proj.name = 'Projector';

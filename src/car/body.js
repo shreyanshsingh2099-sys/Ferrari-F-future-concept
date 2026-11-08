@@ -95,7 +95,7 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   }
 
   // ---------------- headlights ----------------
-  const headHalf = smoothPolygon([[0.59, 0.424], [0.63, 0.442], [0.80, 0.522], [0.875, 0.544], [0.915, 0.566], [0.895, 0.592], [0.80, 0.584], [0.64, 0.51], [0.574, 0.484], [0.562, 0.448]], 6);
+  const headHalf = smoothPolygon([[0.585, 0.418], [0.64, 0.436], [0.80, 0.512], [0.885, 0.534], [0.925, 0.556], [0.912, 0.596], [0.84, 0.598], [0.70, 0.546], [0.585, 0.492], [0.556, 0.452]], 6);
   const headR = polygonSDF(headHalf);
   const headFn = (x, y, z) => Math.max(headR(az(z), y), 1.95 - x, 0.38 - y);
   {
@@ -197,8 +197,8 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   const ventFn = (x, y, z) => Math.max(ventSDF(x, z), 0.5 - y);
   {
     const r = pcs.carve(ventFn, { parts: ['hood'], remove: true });
-    pcs.hem(r.outside, { depth: 0.075, steps: 2, mat: 'carbon', part: 'hood' });
-    pcs.offsetCopies(r.inside, -0.075, 'carbon', 'hood');
+    pcs.hem(r.outside, { depth: 0.075, steps: 2, mat: 'carbonMatte', part: 'hood' });
+    pcs.offsetCopies(r.inside, -0.075, 'carbonMatte', 'hood');
   }
   // bonnet underside
   pcs.offsetCopies(pcs.skin('hood', ['paint']), -0.028, 'carbonMatte', 'hood', true);

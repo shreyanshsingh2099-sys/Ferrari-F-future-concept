@@ -172,8 +172,8 @@ export function createMaterials({ paint = 0x8a0710 } = {}) {
     envMapIntensity: 1.6, specularIntensity: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02, side: THREE.DoubleSide, depthWrite: false,
   });
   M.glassClear = new THREE.MeshPhysicalMaterial({
-    name: 'Glass_Lens', color: 0xdfe6ee, metalness: 0, roughness: 0.0, transparent: true, opacity: 0.18,
-    side: THREE.DoubleSide, envMapIntensity: 2.0, clearcoat: 1, depthWrite: false,
+    name: 'Glass_Lens', color: 0x1a1e24, metalness: 0, roughness: 0.0, transparent: true, opacity: 0.35,
+    side: THREE.DoubleSide, envMapIntensity: 1.2, clearcoat: 1, depthWrite: false,
   });
   M.glassRed = new THREE.MeshPhysicalMaterial({
     name: 'Glass_RedLens', color: 0xb01010, metalness: 0, roughness: 0.05, transmission: 0.6, thickness: 0.004,

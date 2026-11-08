@@ -14,7 +14,7 @@ if (QA && !params.has('ui')) document.body.classList.add('qa');
 
 const canvas = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: QA });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, QA ? 1 : 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, QA ? 1 : 1.75));
 renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
@@ -88,6 +88,7 @@ const VIEWS = {
   top: { pos: [0.15, 10.5, 0.0001], target: [0.15, 0, 0] },
   rearQuarter: { pos: [-5.4, 1.7, -4.7], target: [-0.2, 0.55, 0] },
   hero: { pos: [4.75, 1.75, -3.55], target: [0.35, 0.45, 0], fov: 32 },
+  reference: { pos: [3.2, 1.08, -2.55], target: [0.05, 0.5, 0], fov: 38 },
 };
 
 let tween = null;
