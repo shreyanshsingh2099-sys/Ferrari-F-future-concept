@@ -152,8 +152,8 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
   const xrayEdge = new THREE.MeshBasicMaterial({ color: 0x8a0710, wireframe: true, transparent: true, opacity: 0.05, depthWrite: false });
 
   const anchors = {
-    driverEye: new THREE.Vector3(-0.36, 0.89, -0.37),
-    driverLook: new THREE.Vector3(0.9, 0.76, -0.37),
+    driverEye: new THREE.Vector3(-0.40, 0.99, -0.13),
+    driverLook: new THREE.Vector3(0.75, 0.62, -0.22),
     engine: new THREE.Vector3(-1.2, 0.62, 0),
   };
 
@@ -186,6 +186,7 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
     setLights(on) {
       api.lightsOn = on;
       lightMats.forEach((m, i) => { m.emissiveIntensity = on ? lightBase[i] : 0.0; });
+      (interior.lights || []).forEach((l) => { l.visible = on; });
       engine.setLights?.(on);
     },
     setXray(on) {

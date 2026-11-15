@@ -68,6 +68,25 @@ export const SCOOP = {
   y: (t) => 0.722 - 0.032 * t,
   h: (t) => 0.105 * Math.pow(Math.max(t, 0), 0.6),
 };
+/**
+ * Engine-cover sculpture (top views): a raised centre panel in three tiers, each rising towards
+ * its rear edge where a transverse vent slot separates it from the next. Returns the height (m)
+ * added along +y at plan position (x, z).
+ */
+const COVER_TIERS = [[-0.56, 0], [-0.665, 0.014], [-0.705, 0.014], [-1.125, 0.042], [-1.165, 0.012], [-1.55, 0.040], [-1.59, 0.012], [-1.69, 0]];
+export function coverBump(x, z) {
+  if (x > -0.56 || x < -1.69) return 0;
+  let h = 0;
+  for (let i = 0; i < COVER_TIERS.length - 1; i++) {
+    const [xa, ha] = COVER_TIERS[i], [xb, hb] = COVER_TIERS[i + 1];
+    if (x <= xa && x >= xb) { h = ha + ((hb - ha) * (x - xa)) / (xb - xa); break; }
+  }
+  const w = 0.30 + ((x + 0.63) / -1.0) * (0.21 - 0.30); // half-width of the raised panel
+  return h * (1 - smoothstep(w, w + 0.05, Math.abs(z)));
+}
+/** side channel beside the raised panel: inner / outer |z| edges at x */
+export const COVER_SIDE = { x0: -0.74, x1: -1.30, zi: (x) => 0.33 + (x + 0.74) * 0.116, zo: (x) => 0.405 + (x + 0.74) * 0.125 };
+
 /** depth of the side sweep at (x, y) — same law as the body field. */
 export function sweepDepth(x, y) {
   if (!(x < 0.92 && x > -0.9)) return 0;

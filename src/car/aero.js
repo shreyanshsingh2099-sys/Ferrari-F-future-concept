@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { sweep, plate, grid, mesh, naca, mergeGeometries, fan, rod } from '../core/geo.js';
 import { boxUV } from './materials.js';
-import { PROFILES, SCOOP, sweepDepth, surfaceZ, surfaceY, surfaceX, surfaceYBottom } from './bodyShape.js';
+import { PROFILES, SCOOP, COVER_SIDE, coverBump, sweepDepth, surfaceZ, surfaceY, surfaceX, surfaceYBottom } from './bodyShape.js';
 import { smoothstep, clamp } from '../core/math.js';
 import { sdPolygon, smoothPolygon } from '../core/sdf2d.js';
 
@@ -33,14 +33,14 @@ function splitter(M) {
     for (const [y, dx] of [[0.13, 0]]) {
       const zc = 0.90 * s;
       const x0 = (surfaceX(0.2, 0.84 * s, 1) ?? 2.1);
-      const shape = [[0.02, 0], [-0.12 + dx, 0], [-0.1 + dx, 0.075 * s], [0.03, 0.03 * s]];
+      const shape = [[0.015, 0], [-0.10 + dx, 0], [-0.085 + dx, 0.045 * s], [0.02, 0.018 * s]];
       const gg = plate(shape, 0.006, 'xz');
       gg.rotateZ(-0.12); // raise the trailing edge (about the canard's own root)
       gg.translate(x0, y, zc);
       dive.push(gg);
     }
   }
-  g.add(mesh(UV(mergeGeometries(dive)), M.carbon, 'DivePlanes'));
+  g.add(mesh(UV(mergeGeometries(dive)), M.carbonMatte, 'DivePlanes'));
   return g;
 }
 
@@ -54,7 +54,7 @@ function intake(M) {
     const k = smoothstep(0.6, 0.9, Math.abs(z));
     return [x - set - 0.06 * k, y, z * (1 - 0.02 * k)];
   }, 90, 14);
-  g.add(mesh(geo, M.grille, 'Intake_Honeycomb', { cast: false }));
+  g.add(mesh(geo, M.grilleFront, 'Intake_Honeycomb', { cast: false }));
   const back = grid((u, v) => {
     const z = -0.9 + 1.8 * u, y = 0.12 + 0.28 * v;
     let x = surfaceX(y, clamp(z, -0.86, 0.86), 1) ?? 2.1;
@@ -64,9 +64,9 @@ function intake(M) {
   // thin dark vertical slats in the centre intake + one carbon vane across each side intake
   const slats = [];
   // two bold carbon blades in the centre opening (front splitter/duct detail)
-  for (const zc of [-0.125, 0.125]) {
+  for (const zc of [-0.11, 0.11]) {
     const outline = [];
-    const ys = []; for (let y = 0.135; y <= 0.345; y += 0.03) ys.push(y);
+    const ys = []; for (let y = 0.185; y <= 0.336; y += 0.025) ys.push(y);
     for (const y of ys) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.03, y]);
     for (const y of ys.slice().reverse()) outline.push([(surfaceX(y, zc, 1) ?? 2.4) - 0.14, y]);
     slats.push(plate(outline, 0.016, 'xy', zc, 0.002));
@@ -77,35 +77,42 @@ function intake(M) {
 
 function diffuser(M) {
   const g = new THREE.Group(); g.name = 'Diffuser';
-  const x0 = -1.70, x1 = -2.085;
+  const x0 = -1.70, x1 = -2.06;
   const h = (az) => {
     // flat centre section, arched outer venturi tunnels
     if (az < 0.30) return 0.29;
-    return 0.29 + 0.115 * Math.sin(Math.PI * clamp((az - 0.30) / 0.52, 0, 1));
+    const q = clamp((az - 0.565) / 0.265, -1, 1);
+    return 0.29 + 0.125 * (1 - q * q * q * q); // squarer "∩" tunnels
   };
   const ramp = (x, z) => { const t = smoothstep(x0, x1 + 0.03, x); return 0.098 + (h(Math.abs(z)) - 0.098) * Math.pow(t, 1.35); };
   const geo = grid((u, v) => { const x = x0 + (x1 - x0) * u, z = -0.81 + 1.62 * v; return [x, ramp(x, z), z]; }, 36, 120);
   geo.computeVertexNormals();
   const mat = M.carbonMatte.clone(); mat.side = THREE.DoubleSide;
   g.add(mesh(UV(geo), mat, 'Diffuser_Ramp'));
-  // fins
+  // frame plates at the arch edges + two thin fins inside each tunnel (rear views, diffuser detail)
   const fins = [];
-  for (const zc of [-0.80, -0.55, -0.31, 0.31, 0.55, 0.80]) {
+  for (const [azc, th] of [[0.815, 0.014], [0.655, 0.007], [0.49, 0.007], [0.315, 0.014]]) for (const sg of [-1, 1]) {
+    const zc = sg * azc;
     const outline = [];
     const xs = [];
     for (let i = 0; i <= 16; i++) xs.push(x0 - 0.02 + (x1 - x0 + 0.02) * (i / 16));
-    const curve = Math.abs(zc) > 0.4 && Math.abs(zc) < 0.7 ? 0.05 * Math.sign(zc) : 0;
     for (const x of xs) outline.push([x, ramp(x, zc) + 0.004]);
     for (const x of xs.slice().reverse()) outline.push([x, 0.105 + 0.03 * smoothstep(x0, x1, x)]);
-    const f = plate(outline, 0.012, 'xy', zc);
-    if (curve) { // curved inner fins (bend outward toward the trailing edge)
-      const p = f.attributes.position;
-      for (let i = 0; i < p.count; i++) { const t = smoothstep(x0, x1, p.getX(i)); p.setZ(i, p.getZ(i) + curve * t * t); }
-      f.computeVertexNormals();
-    }
-    fins.push(f);
+    fins.push(plate(outline, th, 'xy', zc));
   }
   g.add(mesh(UV(mergeGeometries(fins)), M.carbon, 'Diffuser_Fins'));
+  // carbon arch frames on the bumper face, tracing the tunnel exits
+  const frames = [];
+  for (const sg of [-1, 1]) {
+    const sec = (u) => {
+      const az = 0.315 + 0.5 * u, z = sg * az;
+      const y = h(az) + 0.012;
+      const x = (surfaceX(Math.min(y + 0.03, 0.46), z, -1) ?? -2.05) - 0.004;
+      return [[x + 0.03, y - 0.03, z], [x - 0.012, y - 0.03, z], [x - 0.012, y + 0.012, z], [x + 0.03, y + 0.012, z]];
+    };
+    frames.push(sweep(sec, 40, { closed: true, caps: true }));
+  }
+  g.add(mesh(UV(mergeGeometries(frames)), M.carbon, 'Diffuser_ArchFrames'));
   // rain / fog light in the centre section
   const lampX = (surfaceX(0.25, 0, -1) ?? -2.12) + 0.05;
   const housing = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.085, 0.07), M.blackGloss);
@@ -259,24 +266,33 @@ function hoodFins(M) {
     };
     geos.push(sweep(sec, 40, { closed: true, caps: true }));
   }
-  return mesh(UV(mergeGeometries(geos), 6), M.carbon, 'Fluxus_DuctFins');
+  return mesh(UV(mergeGeometries(geos), 6), M.ventFin, 'Fluxus_DuctFins');
 }
 
 /** Engine cover louvre slats (parented to the engine cover). */
 function coverSlats(M) {
   const geos = [];
-  for (const [x0, x1, w] of [[-0.87, -0.64, 0.30], [-1.69, -1.43, 0.26]]) {
-    const n = 5;
-    for (let i = 0; i < n; i++) {
-      const x = x0 + ((i + 0.5) / n) * (x1 - x0);
-      const y = (surfaceY(x, 0) ?? 1.0) - 0.016;
-      const b = new THREE.BoxGeometry(0.05, 0.005, 2 * w - 0.04);
-      b.rotateZ(-0.6);
-      b.translate(x, y, 0);
-      geos.push(b);
-    }
+  const C = COVER_SIDE;
+  const Y = (x, z) => (surfaceY(x, z) ?? 1.0) + coverBump(x, z);
+  // two longitudinal slats across each side channel
+  for (const sg of [-1, 1]) for (const f of [0.34, 0.68]) {
+    const sec = (u) => {
+      const x = C.x0 + 0.02 + (C.x1 - C.x0 - 0.04) * u;
+      const z = sg * (C.zi(x) + (C.zo(x) - C.zi(x)) * f);
+      const y = Y(x, z) - 0.01;
+      return [[x, y - 0.004, z - 0.009], [x, y + 0.003, z - 0.004], [x, y + 0.003, z + 0.004], [x, y - 0.004, z + 0.009]];
+    };
+    geos.push(sweep(sec, 24, { closed: true, caps: true }));
   }
-  return mesh(UV(mergeGeometries(geos)), M.carbon, 'EngineCover_Louvres');
+  // a thin raised lip along the rear edge of each tier (catches the light above the vent slot)
+  for (const [xc, hw] of [[-1.123, 0.2], [-1.548, 0.17]]) {
+    const sec = (u) => {
+      const z = -hw + 2 * hw * u, y = Y(xc, z);
+      return [[xc + 0.012, y - 0.002, z], [xc - 0.002, y - 0.004, z], [xc - 0.002, y + 0.004, z], [xc + 0.012, y + 0.002, z]];
+    };
+    geos.push(sweep(sec, 20, { closed: true, caps: true }));
+  }
+  return mesh(UV(mergeGeometries(geos)), M.carbonMatte, 'EngineCover_Slats');
 }
 
 export function buildAero(M) {

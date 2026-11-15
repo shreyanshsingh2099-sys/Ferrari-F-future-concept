@@ -91,62 +91,64 @@ function makeRim(spec, M) {
   lip.name = 'RimLipMachined';
   g.add(lip);
 
-  // twisted spokes
+  // Five broad pinwheel blades (wheel & brake detail sheet): each spoke is a wide, flat-faced
+  // blade whose centreline is tangent to a circle of radius d around the hub, trimmed exactly by
+  // the hub and rim circles. A crease runs along the blade, so one facet catches the light.
   const nSp = 5;
-  const rHub = 0.072, rOut = R - 0.018;
-  const twist = 0.46; // radians of sweep from hub to rim
-  const spokeGeo = [];
-  const edgeGeo = [];
+  const rHub = 0.10, rOut = R - 0.02, d = 0.064;
+  const hfAt = (s) => (face - 0.046) + 0.04 * Math.pow(s, 1.5); // slightly dished face
+  const spokeGeo = [], edgeGeo = [];
   for (let k = 0; k < nSp; k++) {
-    const th0 = (k / nSp) * Math.PI * 2;
-    // straight spoke offset from the radial direction by d: th(r) = th0 + atan(d / sqrt(r^2 - d^2))
-    const d = 0.046;
-    const spokeTh = (r) => th0 + Math.atan2(d, Math.sqrt(Math.max(r * r - d * d, 1e-6)));
+    const phi = (k / nSp) * Math.PI * 2;
+    const nx = Math.cos(phi), ny = Math.sin(phi), tx = -ny, ty = nx;
+    const fibre = (s, o, h) => {
+      const q = d + o;
+      const L0 = Math.sqrt(Math.max(rHub * rHub - q * q, 0)) - 0.012, L1 = Math.sqrt(Math.max(rOut * rOut - q * q, 0));
+      const L = L0 + (L1 - L0) * s;
+      return [nx * q + tx * L, ny * q + ty * L, h];
+    };
+    const wAt = (s) => 0.070 + 0.048 * s;
     const section = (s) => {
-      const r = rHub + (rOut - rHub) * s;
-      const th = spokeTh(r);
-      const w = 0.040 + 0.072 * Math.pow(s, 1.05); // broad blade, widening to the rim
-      const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6); // concave face
-      const t = 0.034 + 0.01 * s; // depth
-      const tilt = 0.014 * s; // propeller twist across the blade
-      const ridgeOff = -0.22 * w;
-      const ct = Math.cos(th), st = Math.sin(th);
-      const tx = -st, ty = ct; // tangential direction
-      const P = (off, h, rr = r) => [ct * rr + tx * off, st * rr + ty * off, h];
+      const w = wAt(s), hf = hfAt(s), T = 0.036 + 0.008 * s, c = 0.007;
+      const crease = -0.12 * w, fold = 0.011 + 0.006 * s; // trailing facet drops away from the crease
       return [
-        P(-w / 2, hf - t), P(-w / 2, hf - 0.004 - tilt), P(ridgeOff, hf + 0.006), P(w / 2, hf - 0.008 + tilt), P(w / 2, hf - t),
+        fibre(s, -w / 2, hf - T), fibre(s, -w / 2, hf - c), fibre(s, -w / 2 + c, hf), fibre(s, crease, hf + 0.002),
+        fibre(s, w / 2 - c, hf - fold), fibre(s, w / 2, hf - fold - c), fibre(s, w / 2, hf - T),
       ];
     };
-    const sg = sweepStrips(section, 32, true);
-    spokeGeo.push(sg);
-    // machined ridge edge (thin bright strip on the ridge line)
-    const ridge = (s) => {
-      const r = rHub + (rOut - rHub) * s;
-      const th = spokeTh(r);
-      const w = 0.040 + 0.072 * Math.pow(s, 1.05);
-      const hf = (face - 0.055) + 0.05 * Math.pow(s, 1.6);
-      const ct = Math.cos(th), st = Math.sin(th), tx = -st, ty = ct;
-      const o = -0.22 * w;
-      return [[ct * r + tx * (o - 0.0025), st * r + ty * (o - 0.0025), hf + 0.0063], [ct * r + tx * (o + 0.0025), st * r + ty * (o + 0.0025), hf + 0.0063]];
-    };
-    edgeGeo.push(sweepStrips(ridge, 32, false));
+    spokeGeo.push(sweepStrips(section, 28, true));
+    // thin machined chamfer along the leading edge
+    const chamfer = (s) => { const w = wAt(s), hf = hfAt(s); return [fibre(s, -w / 2, hf - 0.0068), fibre(s, -w / 2 + 0.0068, hf + 0.0002)]; };
+    edgeGeo.push(sweepStrips(chamfer, 28, false));
   }
   const spokes = new THREE.Mesh(mergeGeometries(spokeGeo), M.rim); spokes.name = 'Spokes';
   const edges = new THREE.Mesh(mergeGeometries(edgeGeo), M.rimMachined); edges.name = 'SpokeEdges';
   g.add(spokes, edges);
-  // hub disc and centre lock
-  const hub = new THREE.Mesh(lathe([[0.0, face - 0.03], [0.05, face - 0.03], [0.078, face - 0.05], [0.082, face - 0.09], [0.06, face - 0.1], [0.0, face - 0.1]], 48), M.rim);
+  // hub with five lug bolts and the yellow centre cap
+  const hubTop = hfAt(0) + 0.008;
+  const hub = new THREE.Mesh(lathe([[0.0, hubTop], [0.086, hubTop], [0.1, hubTop - 0.006], [0.106, hubTop - 0.02], [0.108, hubTop - 0.055], [0.07, hubTop - 0.075], [0.0, hubTop - 0.075]], 60), M.rim);
   hub.name = 'Hub';
-  const nut = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.038, 0.03, 12), M.darkChrome);
-  nut.rotation.x = Math.PI / 2; nut.position.z = face - 0.015; nut.name = 'CentreLockNut';
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.006, 40), M.yellow);
-  cap.rotation.x = Math.PI / 2; cap.position.z = face + 0.001; cap.name = 'CentreCap';
+  g.add(hub);
+  const bolts = [];
+  for (let k = 0; k < nSp; k++) {
+    const a = ((k + 0.5) / nSp) * Math.PI * 2;
+    const b = new THREE.CylinderGeometry(0.0105, 0.012, 0.012, 6);
+    b.rotateX(Math.PI / 2); b.translate(Math.cos(a) * 0.058, Math.sin(a) * 0.058, hubTop + 0.004);
+    bolts.push(b);
+    const seat = new THREE.CylinderGeometry(0.016, 0.016, 0.003, 20);
+    seat.rotateX(Math.PI / 2); seat.translate(Math.cos(a) * 0.058, Math.sin(a) * 0.058, hubTop + 0.0005);
+    bolts.push(seat);
+  }
+  const boltMesh = new THREE.Mesh(mergeGeometries(bolts), M.blackGloss); boltMesh.name = 'LugBolts';
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.032, 0.008, 40), M.yellow);
+  cap.rotation.x = Math.PI / 2; cap.position.z = hubTop + 0.004; cap.name = 'CentreCap';
+  const capRing = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.0025, 8, 40), M.darkChrome); capRing.position.z = hubTop + 0.004;
   // black shield emblem on the cap
   const shield = new THREE.Shape();
   shield.moveTo(-0.012, 0.014); shield.lineTo(0.012, 0.014); shield.lineTo(0.012, -0.004); shield.quadraticCurveTo(0.012, -0.012, 0, -0.016); shield.quadraticCurveTo(-0.012, -0.012, -0.012, -0.004); shield.closePath();
   const emb = new THREE.Mesh(new THREE.ShapeGeometry(shield), M.badgeBlack);
-  emb.position.z = face + 0.0045; emb.scale.setScalar(0.7);
-  g.add(hub, nut, cap, emb);
+  emb.position.z = hubTop + 0.0085; emb.scale.setScalar(0.85);
+  g.add(boltMesh, cap, capRing, emb);
   // valve stem
   const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.02, 8), M.darkChrome);
   valve.position.set(R - 0.02, 0, face - 0.03); valve.rotation.x = Math.PI / 2;
@@ -192,7 +194,7 @@ function makeTyre(spec, M) {
 
 function makeBrake(spec, M, front) {
   const g = new THREE.Group();
-  const rOut = front ? 0.199 : 0.180, rIn = front ? 0.118 : 0.110, th = front ? 0.038 : 0.034;
+  const rOut = front ? 0.205 : 0.2, rIn = front ? 0.122 : 0.12, th = front ? 0.038 : 0.034;
   const hz = -0.02; // disc plane (axial)
   const holes = discHoleTexture();
   const discMat = M.brakeDisc.clone();
@@ -200,7 +202,7 @@ function makeBrake(spec, M, front) {
   const faceGeo = new THREE.RingGeometry(rIn, rOut, 96, 1);
   // ring UVs: planar mapping that matches the hole texture (centred)
   const uv = faceGeo.attributes.uv, p = faceGeo.attributes.position;
-  for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.5 + p.getX(i) / (2 * 0.2), 0.5 + p.getY(i) / (2 * 0.2));
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.5 + p.getX(i) / (2 * rOut * 1.08), 0.5 + p.getY(i) / (2 * rOut * 1.08));
   const f1 = new THREE.Mesh(faceGeo, discMat); f1.position.z = hz + th / 2;
   const f2 = new THREE.Mesh(faceGeo, discMat); f2.position.z = hz - th / 2; f2.rotation.y = Math.PI;
   const rimEdge = new THREE.Mesh(new THREE.CylinderGeometry(rOut, rOut, th, 96, 1, true), M.brakeDisc);
@@ -209,7 +211,7 @@ function makeBrake(spec, M, front) {
   const vanes = new THREE.Mesh(new THREE.CylinderGeometry(rOut - 0.004, rOut - 0.004, th * 0.6, 48, 1, true), M.blackMatte);
   vanes.rotation.x = Math.PI / 2; vanes.position.z = hz;
   // aluminium bell
-  const bell = new THREE.Mesh(lathe([[0.0, hz + 0.03], [rIn + 0.005, hz + 0.03], [rIn + 0.008, hz + 0.018], [rIn - 0.002, hz + 0.012], [0.085, hz + 0.05], [0.07, hz + 0.075], [0.0, hz + 0.075]], 48), M.alu);
+  const bell = new THREE.Mesh(lathe([[0.0, hz + 0.03], [rIn + 0.005, hz + 0.03], [rIn + 0.008, hz + 0.018], [rIn - 0.002, hz + 0.012], [0.085, hz + 0.05], [0.07, hz + 0.075], [0.0, hz + 0.075]], 48), M.aluDark);
   bell.name = 'DiscBell';
   // bobbins
   const bobGeo = [];
@@ -240,11 +242,11 @@ function makeBrake(spec, M, front) {
   const endA = capPolygon(sec(0)), endB = capPolygon(sec(1), true);
   cal.add(calBody, new THREE.Mesh(endA, M.caliper), new THREE.Mesh(endB, M.caliper));
   // yellow logo plate on the outboard face
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.014), M.yellow);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.02), M.tricolorR);
   plate.position.set(rOut - 0.016, 0, hz + th / 2 + 0.0305); plate.rotation.z = Math.PI / 2;
   cal.add(plate);
   // place caliper at ~ the 1–2 o'clock trailing position (seen from the left side)
-  cal.rotation.z = front ? 2.1 : 2.0;
+  cal.rotation.z = Math.PI + 0.18; // trailing side of the axle, as on the wheel & brake detail sheet
   g.add(cal);
   // hub carrier / upright stub
   const upright = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.08, 24), M.aluDark);

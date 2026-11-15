@@ -4,7 +4,7 @@
 // Every cut edge receives a "hem": a return flange that gives the panel its
 // thickness, forms door jambs, vent walls, intake ducts and light housings.
 import { meshBody } from './bodyMesher.js';
-import { makeFieldCache, surfaceNormal } from './bodyShape.js';
+import { makeFieldCache, surfaceNormal, coverBump, COVER_SIDE } from './bodyShape.js';
 import { sdCircle, sdBox, sdPolygon, smoothPolygon, polygonSDF } from '../core/sdf2d.js';
 import { pchip } from '../core/math.js';
 import { DIMS } from './dims.js';
@@ -57,7 +57,7 @@ class Pieces {
 
 export const OUTLINES = {
   hood: [[2.27, 0.0], [2.25, 0.30], [2.18, 0.46], [2.0, 0.53], [1.70, 0.565], [1.43, 0.585], [1.402, 0.40], [1.40, 0.0], [1.402, -0.40], [1.43, -0.585], [1.70, -0.565], [2.0, -0.53], [2.18, -0.46], [2.25, -0.30]],
-  engineCover: [[-0.53, 0.0], [-0.535, 0.40], [-0.60, 0.445], [-1.0, 0.44], [-1.5, 0.415], [-1.80, 0.395], [-1.862, 0.33], [-1.865, 0.0], [-1.862, -0.33], [-1.80, -0.395], [-1.5, -0.415], [-1.0, -0.44], [-0.60, -0.445], [-0.535, -0.40]],
+  engineCover: [[-0.53, 0.0], [-0.535, 0.42], [-0.60, 0.465], [-1.0, 0.43], [-1.4, 0.36], [-1.62, 0.315], [-1.685, 0.26], [-1.69, 0.0], [-1.685, -0.26], [-1.62, -0.315], [-1.4, -0.36], [-1.0, -0.43], [-0.60, -0.465], [-0.535, -0.42]],
 };
 
 const SYM = (half) => {
@@ -90,9 +90,9 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   // One wide lower intake with a flat top at bumper height, split into a centre and two side
   // openings by angled body-coloured fangs, plus narrow vertical ducts at the outer corners
   // (front views of sheets 03, 04 and 06).
-  const grilleC = polygonSDF(smoothPolygon([[-0.25, 0.335], [0.25, 0.335], [0.345, 0.128], [0.0, 0.122], [-0.345, 0.128]], 3));
-  const grilleSide = polygonSDF(smoothPolygon([[0.315, 0.335], [0.60, 0.338], [0.795, 0.345], [0.80, 0.24], [0.79, 0.15], [0.60, 0.135], [0.415, 0.135]], 3));
-  const grilleCorner = polygonSDF(smoothPolygon([[0.838, 0.40], [0.885, 0.428], [0.93, 0.42], [0.934, 0.20], [0.90, 0.15], [0.845, 0.15]], 3));
+  const grilleC = polygonSDF(smoothPolygon([[-0.225, 0.335], [0.225, 0.335], [0.31, 0.185], [0.0, 0.18], [-0.31, 0.185]], 3));
+  const grilleSide = polygonSDF(smoothPolygon([[0.335, 0.335], [0.60, 0.338], [0.795, 0.345], [0.80, 0.26], [0.785, 0.195], [0.60, 0.187], [0.42, 0.187]], 3));
+  const grilleCorner = polygonSDF(smoothPolygon([[0.838, 0.40], [0.885, 0.428], [0.93, 0.42], [0.934, 0.23], [0.90, 0.19], [0.845, 0.19]], 3));
   const grilleSDF = (z, y) => Math.min(grilleC(z, y), grilleSide(Math.abs(z), y), grilleCorner(Math.abs(z), y));
   const grilleFn = (x, y, z) => Math.max(grilleSDF(z, y), 1.90 - x, y - 0.47);
   {
@@ -124,7 +124,7 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
 
   // ---------------- rear diffuser opening ----------------
   // centre section + two arched outer venturi tunnels (rear views / rear diffuser detail)
-  const diffSDF = polygonSDF(smoothPolygon(SYM([[0.0, -0.2], [0.83, -0.2], [0.83, 0.20], [0.80, 0.30], [0.72, 0.38], [0.60, 0.415], [0.48, 0.41], [0.38, 0.37], [0.33, 0.31], [0.30, 0.30], [0.0, 0.30]]), 5));
+  const diffSDF = polygonSDF(smoothPolygon(SYM([[0.0, -0.2], [0.835, -0.2], [0.835, 0.29], [0.815, 0.375], [0.75, 0.422], [0.40, 0.422], [0.335, 0.385], [0.31, 0.305], [0.28, 0.30], [0.0, 0.30]]), 5));
   const diffFn = (x, y, z) => Math.max(diffSDF(z, y), x + 1.72);
   {
     const r = pcs.carve(diffFn, { remove: true });
@@ -195,17 +195,43 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
     pcs.hem(r.outside, { depth: 0.06, steps: 2, mat: 'blackSatin' });
     pcs.hem(r.inside, { depth: 0.025, steps: 2, mat: 'carbon', part: 'engineCover' });
   }
-  const slot = (x0, x1, w) => (x, y, z) => Math.max(sdBox(x, z, (x0 + x1) / 2, 0, (x1 - x0) / 2, w, 0.05), 0.8 - y);
-  const louvres = [slot(-0.87, -0.64, 0.30), slot(-1.69, -1.43, 0.26)];
-  for (const fn of louvres) {
+  // transverse vent slots between the three tiers
+  for (const [xc, hw] of [[-0.685, 0.27], [-1.145, 0.215], [-1.57, 0.185]]) {
+    const fn = (x, y, z) => Math.max(sdBox(x, z, xc, 0, 0.02, hw, 0.012), 0.8 - y);
     const r = pcs.carve(fn, { parts: ['engineCover'], remove: true });
-    pcs.hem(r.outside, { depth: 0.022, steps: 1, mat: 'carbon', part: 'engineCover' });
+    pcs.hem(r.outside, { depth: 0.03, steps: 1, mat: 'cavity', part: 'engineCover' });
+    pcs.offsetCopies(r.inside, -0.03, 'cavity', 'engineCover');
   }
+  // side channels beside the raised panel (dark, crossed by slats: aero.js)
   {
-    const r = pcs.carve(slot(-1.31, -0.95, 0.30), { parts: ['engineCover'], toMat: 'glassEngine' });
-    pcs.hem(r.outside, { depth: 0.022, steps: 1, mat: 'blackSatin', part: 'engineCover' });
+    const C = COVER_SIDE;
+    const fn = (x, y, z) => Math.max(C.zi(x) - az(z), az(z) - C.zo(x), x - C.x0, C.x1 - x, 0.8 - y) + 0.006;
+    const r = pcs.carve((x, y, z) => fn(x, y, z) - 0.006, { parts: ['engineCover'], remove: true });
+    pcs.hem(r.outside, { depth: 0.035, steps: 1, mat: 'cavity', part: 'engineCover' });
+    pcs.offsetCopies(r.inside, -0.035, 'cavity', 'engineCover');
+  }
+  // smoked window over the V12 in the first tier
+  {
+    const r = pcs.carve((x, y, z) => Math.max(sdBox(x, z, -0.925, 0, 0.165, 0.19, 0.03), 0.8 - y), { parts: ['engineCover'], mats: ['carbon'], toMat: 'glassEngine' });
+    pcs.hem(r.outside, { depth: 0.012, steps: 1, mat: 'blackSatin', part: 'engineCover' });
   }
   pcs.offsetCopies(pcs.skin('engineCover', ['carbon']), -0.025, 'carbonMatte', 'engineCover', true);
+  // raise the tiers: displace every engine-cover piece, and re-derive the skin normals
+  for (const p of pcs.list) {
+    if (p.part !== 'engineCover') continue;
+    const P = p.mesh.pos, N = p.mesh.nrm, e = 0.002;
+    for (let i = 0; i < P.length; i += 3) {
+      const x = P[i], z = P[i + 2];
+      const b = coverBump(x, z);
+      if (!p.tag && N[i + 1] > 0.3) {
+        const bx = (coverBump(x + e, z) - coverBump(x - e, z)) / (2 * e), bz = (coverBump(x, z + e) - coverBump(x, z - e)) / (2 * e);
+        let nx = N[i] / N[i + 1] - bx, nz = N[i + 2] / N[i + 1] - bz;
+        const l = Math.hypot(nx, 1, nz);
+        N[i] = nx / l; N[i + 1] = 1 / l; N[i + 2] = nz / l;
+      }
+      P[i + 1] += b;
+    }
+  }
 
   // ---------------- butterfly doors ----------------
   const doorSide = polygonSDF(smoothPolygon([[0.938, 0.165], [0.946, 0.60], [0.95, 0.84], [0.96, 1.6], [-0.318, 1.6], [-0.318, 0.92], [-0.30, 0.60], [-0.25, 0.20], [-0.21, 0.165]], 3));
@@ -243,10 +269,14 @@ export function buildBodyPieces({ quality = 'full' } = {}) {
   const carbonFn = (x, y, z) => Math.max(y - cl(x), az(x) - 0.985, 0.70 - az(z));
   pcs.carve(carbonFn, { parts: ['body', 'doorL', 'doorR'], mats: ['paint'], toMat: 'carbon' });
   // dark carbon lower tail (diffuser side plates) and front corner ducts
-  pcs.carve((x, y, z) => Math.max(x + 1.84, y - 0.47, 0.5 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
+  // lower rear corners: body colour runs down the bumper "legs" beside the diffuser arches
+  // (rear views); only the lowest band behind the rear wheel is carbon (side views)
+  const clRear = pchip([[-0.985, 0.50], [-1.1, 0.42], [-1.3, 0.30], [-1.9, 0.30], [-2.2, 0.30]]);
+  pcs.carve((x, y, z) => Math.max(y - clRear(x), x + 0.985, 0.6 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
+  // lower front corners ahead of / behind the front wheel
+  pcs.carve((x, y, z) => Math.max(y - 0.27, 0.985 - x, x - 1.97, 0.6 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
   pcs.carve((x, y, z) => Math.max(1.96 - x, y - 0.40, 0.80 - az(z)), { mats: ['paint'], toMat: 'carbonMatte' });
-  // carbon lower lip under the intakes, flowing into the splitter
-  pcs.carve((x, y, z) => Math.max(1.9 - x, y - 0.14), { mats: ['paint'], toMat: 'carbonMatte' });
+  // (the lip under the intakes stays body colour, as on the front views; the splitter below is carbon)
   // dark carbon cowl between the bonnet and the windscreen base (reference top view)
   pcs.carve((x, y, z) => Math.max(x - 1.398, 1.2 - x, az(z) - 0.64, 0.6 - y, F.lower(x, y, z) - 0.008), { parts: ['body'], mats: ['paint'], toMat: 'carbon' });
   // flush door handles

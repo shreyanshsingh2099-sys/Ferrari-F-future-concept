@@ -168,7 +168,7 @@ function setMode(m) {
     const look = car.anchors.driverLook.clone().applyMatrix4(car.root.matrixWorld);
     const dir = look.clone().sub(eye).normalize();
     const target = eye.clone().add(dir.multiplyScalar(0.06));
-    flyTo(eye.toArray(), target.toArray(), 1.8, { direct: true, fov: 62 });
+    flyTo(eye.toArray(), target.toArray(), 1.8, { direct: true, fov: 68 });
     controls.minDistance = 0.02; controls.maxDistance = 0.9;
     controls.enablePan = false;
   } else if (m === 'engine') {
@@ -321,7 +321,9 @@ async function main() {
   window.addEventListener('resize', resize);
   progress(0.02, 'Preparing studio…');
   await new Promise((r) => requestAnimationFrame(r));
-  car = await buildCar({ onProgress: progress, detail: params.get('detail') || 'full' });
+  // lighter body mesh on phones / low-memory devices (same shape and trim lines, about half the triangles)
+  const lowPower = matchMedia('(max-width: 720px)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  car = await buildCar({ onProgress: progress, detail: params.get('detail') || (lowPower && !QA ? 'draft' : 'full') });
   scene.add(car.root);
   car.root.updateMatrixWorld(true);
   studio.bakeContactShadow(car.root);

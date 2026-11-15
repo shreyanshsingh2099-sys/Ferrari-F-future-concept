@@ -181,22 +181,28 @@ function steeringWheel(M) {
     for (let i = 0; i <= 14; i++) { const a = (s > 0 ? 0 : Math.PI) + (i / 14 - 0.5) * 1.1; grip.push([Math.cos(a) * 0.175, Math.sin(a) * 0.165, 0]); }
     g.add(mesh(tube(grip, 0.0175, 12, 40), M.leather, 'Wheel_Grip'));
   }
-  // carbon hub
-  const hubShape = new THREE.Shape();
-  hubShape.moveTo(-0.16, 0.02); hubShape.quadraticCurveTo(-0.17, 0.07, -0.1, 0.08); hubShape.lineTo(0.1, 0.08); hubShape.quadraticCurveTo(0.17, 0.07, 0.16, 0.02);
-  hubShape.lineTo(0.08, -0.06); hubShape.quadraticCurveTo(0, -0.12, -0.08, -0.06); hubShape.closePath();
-  const hub = new THREE.ExtrudeGeometry(hubShape, { depth: 0.03, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 3 });
-  hub.translate(0, 0, -0.02);
-  g.add(mesh(boxUV(hub, 6), M.carbon, 'Wheel_Hub'));
-  // centre badge, manettino, buttons
-  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.004, 24), M.yellow); badge.rotation.x = Math.PI / 2; badge.position.set(0, 0.035, 0.018);
-  const man = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.016, 20), M.leatherRed); man.rotation.x = Math.PI / 2; man.position.set(0.07, -0.04, 0.02); man.name = 'Manettino';
-  const manRing = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.003, 8, 24), M.alu); manRing.position.set(0.07, -0.04, 0.017);
-  const start = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.01, 20), M.tricolorR); start.rotation.x = Math.PI / 2; start.position.set(-0.07, -0.04, 0.02); start.name = 'EngineStart';
-  g.add(badge, man, manRing, start);
-  for (const [x, y] of [[-0.11, 0.045], [0.11, 0.045], [-0.12, 0.0], [0.12, 0.0]]) {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.008, 14), M.blackGloss); b.rotation.x = Math.PI / 2; b.position.set(x, y, 0.016); g.add(b);
+  // three-spoke hub: leather centre pad, carbon side spokes carrying the controls, slim lower spoke
+  const pad = new THREE.Mesh(rbox(0.118, 0.092, 0.034, 0.03), M.leather); pad.position.set(0, 0.004, -0.004); pad.name = 'Wheel_CentrePad';
+  g.add(pad);
+  for (const sx of [-1, 1]) {
+    const spoke = plate([[0.05, 0.036], [0.165, 0.024], [0.168, -0.012], [0.05, -0.03]], 0.02, 'xy', -0.004, 0.003);
+    const sm = mesh(boxUV(spoke, 8), M.carbon, 'Wheel_Spoke_' + (sx > 0 ? 'R' : 'L')); sm.scale.x = sx;
+    g.add(sm);
+    // thumb controls on each spoke
+    for (const [x, y, r, m] of [[0.092, 0.006, 0.011, M.blackGloss], [0.122, 0.004, 0.0085, M.alu], [0.146, 0.003, 0.0075, M.blackGloss]]) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.008, 18), m); b.rotation.x = Math.PI / 2; b.position.set(sx * x, y, 0.009); g.add(b);
+    }
   }
+  const lower = plate([[-0.02, -0.03], [0.02, -0.03], [0.03, -0.125], [-0.03, -0.125]], 0.018, 'xy', -0.004, 0.003);
+  g.add(mesh(boxUV(lower, 8), M.alu, 'Wheel_Spoke_Lower'));
+  // centre badge, manettino (lower right) and engine start (lower left)
+  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.004, 28), M.yellow); badge.rotation.x = Math.PI / 2; badge.position.set(0, 0.008, 0.015);
+  const badgeRing = new THREE.Mesh(new THREE.TorusGeometry(0.021, 0.002, 8, 28), M.chrome); badgeRing.position.set(0, 0.008, 0.015);
+  const man = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.015, 0.016, 20), M.leatherRed); man.rotation.x = Math.PI / 2; man.position.set(0.062, -0.052, 0.012); man.name = 'Manettino';
+  const manRing = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.0025, 8, 24), M.alu); manRing.position.set(0.062, -0.052, 0.008);
+  const start = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 20), M.tricolorR); start.rotation.x = Math.PI / 2; start.position.set(-0.062, -0.052, 0.012); start.name = 'EngineStart';
+  const startRing = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.002, 8, 24), M.alu); startRing.position.set(-0.062, -0.052, 0.008);
+  g.add(badge, badgeRing, man, manRing, start, startRing);
   // LED shift lights on the top of the rim
   for (let i = 0; i < 9; i++) {
     const led = new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.005, 0.004), i < 3 ? M.tricolorG : i < 6 ? M.yellow : M.ledRed);
@@ -397,6 +403,10 @@ export function buildInterior(M, mk) {
   group.add(seat(M, DRV, 'Seat_Driver'), seat(M, -DRV, 'Seat_Passenger'));
   group.add(seatBelt(M, DRV), seatBelt(M, -DRV));
   if (mk) { mk.doorR.inner.add(doorCard(M, 1)); mk.doorL.inner.add(doorCard(M, -1)); }
+  // soft cabin lighting (dome + footwell) so the trim reads through the glass and in cockpit mode
+  const dome = new THREE.PointLight(0xfff1e0, 0.9, 2.2, 1.6); dome.position.set(-0.05, 1.02, 0); dome.name = 'Cabin_DomeLight';
+  const foot = new THREE.PointLight(0xff5a48, 0.35, 1.4, 1.8); foot.position.set(0.6, 0.38, 0); foot.name = 'Cabin_AmbientLight';
+  group.add(dome, foot);
   group.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; } });
-  return { group };
+  return { group, lights: [dome, foot] };
 }

@@ -25,7 +25,7 @@ function texFrom(c, { srgb = true, repeat = 1 } = {}) {
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
 /** 2x2 twill carbon weave. Returns { map, rough, aniso } textures. */
-function makeCarbon({ cells = 8, size = 512, base = [38, 38, 42], hi = [118, 120, 128], tint = null } = {}) {
+function makeCarbon({ cells = 8, size = 512, base = [24, 24, 27], hi = [86, 88, 95], tint = null } = {}) {
   const c = canvas(size, size), ctx = c.getContext('2d');
   const ca = canvas(size, size), cta = ca.getContext('2d');
   const cs = size / cells;
@@ -122,6 +122,22 @@ function makeMesh(size = 256, cells = 16, round = false) {
   return texFrom(c, { srgb: false });
 }
 
+/** Honeycomb mesh as a colour texture: black cells, lighter cell walls (reads at any distance). */
+function makeHoneycomb(size = 512, cols = 12) {
+  const c = canvas(size, size), ctx = c.getContext('2d');
+  ctx.fillStyle = '#08080a'; ctx.fillRect(0, 0, size, size);
+  const cw = size / cols, rows = Math.round(cols * 2 / Math.sqrt(3) / 2) * 2, ch = size / rows;
+  ctx.strokeStyle = '#8a8d94'; ctx.lineWidth = cw * 0.2; ctx.lineJoin = 'round';
+  for (let j = -1; j <= rows; j++) for (let i = -1; i <= cols; i++) {
+    const cx = (i + (j & 1 ? 0.5 : 0)) * cw + cw / 2, cy = j * ch + ch / 2;
+    const rx = cw / 2 / Math.cos(Math.PI / 6) * 0.99, ry = (ch * 2) / 3;
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + (k * Math.PI) / 3; const px = cx + Math.cos(a) * rx, py = cy + Math.sin(a) * ry; k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.closePath(); ctx.stroke();
+  }
+  return texFrom(c);
+}
+
 function makeTyreSidewall() {
   // radial texture (u around, v radial) with subtle lettering band and ribs
   const w = 2048, h = 128;
@@ -160,13 +176,15 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   // darker, high-gloss carbon for the bonnet vent panel and Fluxus fins (reads near-black like the
   // reference, with crisp clear-coat highlights along every edge)
   M.carbonDark = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_DarkGloss', color: 0x4a4a4e, map: carbon?.map ?? null, metalness: 0.2, roughness: 0.3,
-    clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 1.2,
+    name: 'Carbon_DarkGloss', color: 0x9a9a9e, map: carbon?.map ?? null, metalness: 0.2, roughness: 0.32,
+    clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.7,
     anisotropy: carbon ? 0.5 : 0, anisotropyMap: carbon?.aniso ?? null,
   });
+  // satin black blades in the bonnet vent: dark from every angle, soft edge highlights only
+  M.ventFin = new THREE.MeshStandardMaterial({ name: 'Vent_Fin_SatinBlack', color: 0x0c0c0e, metalness: 0.3, roughness: 0.5, envMapIntensity: 0.45 });
   M.carbonMatte = new THREE.MeshPhysicalMaterial({
-    name: 'Carbon_Satin', color: 0xd0d0d0, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.5,
-    clearcoat: 0.3, clearcoatRoughness: 0.35, envMapIntensity: 0.8,
+    name: 'Carbon_Satin', color: 0xc8c8c8, map: carbon?.map ?? null, metalness: 0.1, roughness: 0.55,
+    clearcoat: 0.25, clearcoatRoughness: 0.4, envMapIntensity: 0.55,
   });
   M.carbonRed = new THREE.MeshPhysicalMaterial({
     name: 'Carbon_RossoTint', color: 0xd0d0d0, map: carbonRed?.map ?? null, metalness: 0.2, roughness: 0.4,
@@ -199,17 +217,18 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   M.darkChrome = new THREE.MeshStandardMaterial({ name: 'Chrome_Dark', color: 0x55585e, metalness: 1, roughness: 0.12 });
   M.alu = new THREE.MeshPhysicalMaterial({ name: 'Aluminium_Brushed', color: 0xc9ccd1, metalness: 1, roughness: 0.32, anisotropy: 0.7 });
   M.aluDark = new THREE.MeshStandardMaterial({ name: 'Aluminium_Cast', color: 0x8b8e93, metalness: 1, roughness: 0.42 });
-  M.titanium = new THREE.MeshStandardMaterial({ name: 'Titanium_Exhaust', color: 0x9c8f86, metalness: 1, roughness: 0.28 });
+  M.titanium = new THREE.MeshStandardMaterial({ name: 'Titanium_Exhaust', color: 0x6e6a68, metalness: 1, roughness: 0.3 });
+  M.exhaustTip = new THREE.MeshStandardMaterial({ name: 'Exhaust_Tip_BlackChrome', color: 0x2a2b2e, metalness: 1, roughness: 0.22 });
   M.gold = new THREE.MeshStandardMaterial({ name: 'Gold_Foil', color: 0xd9a33a, metalness: 1, roughness: 0.25 });
-  M.rim = new THREE.MeshPhysicalMaterial({ name: 'Rim_Gunmetal', color: 0x80858d, metalness: 1, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.1 });
-  M.rimMachined = new THREE.MeshStandardMaterial({ name: 'Rim_Machined', color: 0xa9adb3, metalness: 1, roughness: 0.18 });
+  M.rim = new THREE.MeshPhysicalMaterial({ name: 'Rim_Graphite', color: 0x6d7077, metalness: 0.6, roughness: 0.42, clearcoat: 0.45, clearcoatRoughness: 0.22 });
+  M.rimMachined = new THREE.MeshStandardMaterial({ name: 'Rim_Machined', color: 0x9da1a8, metalness: 1, roughness: 0.2 });
   M.tyre = new THREE.MeshStandardMaterial({ name: 'Tyre_Rubber', color: 0x141414, metalness: 0, roughness: 0.82 });
   if (HAS_DOM) {
     const sw = makeTyreSidewall();
     M.tyreSide = new THREE.MeshStandardMaterial({ name: 'Tyre_Sidewall', color: 0x141414, roughness: 0.8, bumpMap: sw, bumpScale: 1.5 });
   } else M.tyreSide = M.tyre;
-  M.brakeDisc = new THREE.MeshStandardMaterial({ name: 'Brake_CarbonCeramic', color: 0x3b3b3e, metalness: 0.4, roughness: 0.55 });
-  M.caliper = new THREE.MeshPhysicalMaterial({ name: 'Caliper_Nero', color: 0x101012, metalness: 0.3, roughness: 0.3, clearcoat: 1 });
+  M.brakeDisc = new THREE.MeshStandardMaterial({ name: 'Brake_CarbonCeramic', color: 0x6a6a6e, metalness: 0.35, roughness: 0.5 });
+  M.caliper = new THREE.MeshPhysicalMaterial({ name: 'Caliper_Nero', color: 0x1c1c20, metalness: 0.4, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08 });
   M.yellow = new THREE.MeshPhysicalMaterial({ name: 'Badge_Giallo', color: 0xf2c200, metalness: 0.1, roughness: 0.25, clearcoat: 1 });
   M.badgeBlack = new THREE.MeshStandardMaterial({ name: 'Badge_Black', color: 0x050505, metalness: 0.5, roughness: 0.3 });
   M.tricolorG = new THREE.MeshStandardMaterial({ name: 'Badge_Green', color: 0x0a7a32, roughness: 0.3 });
@@ -225,10 +244,13 @@ export function createMaterials({ paint = 0x96101a } = {}) {
 
   // grilles
   if (HAS_DOM) {
-    const hex = makeMesh(256, 12, false);
-    hex.repeat.set(30, 30);
-    M.grille = new THREE.MeshStandardMaterial({ name: 'Grille_Honeycomb', color: 0x2c2e33, metalness: 0.75, roughness: 0.35, alphaMap: hex, alphaTest: 0.5, side: THREE.DoubleSide });
-  } else M.grille = M.blackSatin;
+    const hex = makeHoneycomb();
+    hex.repeat.set(40, 40);
+    M.grille = new THREE.MeshStandardMaterial({ name: 'Grille_Honeycomb', color: 0xffffff, map: hex, metalness: 0.5, roughness: 0.45, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: hex, emissiveIntensity: 0.1 });
+    // front intake: uv runs 0..1 over 1.8 m x 0.27 m -> square cells of ~26 mm
+    const hexF = hex.clone(); hexF.needsUpdate = true; hexF.repeat.set(56, 8.5);
+    M.grilleFront = M.grille.clone(); M.grilleFront.name = 'Grille_Honeycomb_Front'; M.grilleFront.map = hexF; M.grilleFront.emissiveMap = hexF;
+  } else { M.grille = M.blackSatin; M.grilleFront = M.blackSatin; }
 
   // interior
   const leatherBump = HAS_DOM ? makeLeatherBump() : null;
