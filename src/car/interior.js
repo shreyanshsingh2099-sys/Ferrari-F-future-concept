@@ -24,28 +24,7 @@ function displayTexture(kind) {
   x.fillStyle = bg; x.fillRect(0, 0, W, H);
   x.textAlign = 'center'; x.textBaseline = 'middle';
   if (kind === 'cluster') {
-    // central rev counter (yellow face, classic), side panels
-    const cx = W / 2, cy = H * 0.56, r = H * 0.42;
-    const g = x.createRadialGradient(cx, cy, r * 0.1, cx, cy, r); g.addColorStop(0, '#f6cf2a'); g.addColorStop(1, '#d9a900');
-    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
-    x.strokeStyle = '#111'; x.lineWidth = 3;
-    for (let i = 0; i <= 10; i++) {
-      const a = Math.PI * 0.75 + (i / 10) * Math.PI * 1.5;
-      x.beginPath(); x.moveTo(cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * 0.78); x.lineTo(cx + Math.cos(a) * r * 0.93, cy + Math.sin(a) * r * 0.93); x.stroke();
-      x.fillStyle = i >= 9 ? '#c8102e' : '#111'; x.font = 'bold 22px Arial';
-      x.fillText(String(i), cx + Math.cos(a) * r * 0.64, cy + Math.sin(a) * r * 0.64);
-    }
-    x.strokeStyle = '#c8102e'; x.lineWidth = 7; x.beginPath(); x.arc(cx, cy, r * 0.86, Math.PI * 0.75 + 1.5 * Math.PI * 0.9, Math.PI * 2.25); x.stroke();
-    x.fillStyle = '#111'; x.font = 'bold 60px Arial'; x.fillText('7', cx, cy - 6);
-    x.font = '16px Arial'; x.fillText('x1000 rpm', cx, cy + 46);
-    const na = Math.PI * 0.75 + 0.12 * Math.PI * 1.5;
-    x.strokeStyle = '#c8102e'; x.lineWidth = 5; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(na) * r * 0.8, cy + Math.sin(na) * r * 0.8); x.stroke();
-    // side panels
-    x.fillStyle = '#e8ecf1'; x.font = '300 64px Arial'; x.fillText('0', W * 0.18, H * 0.48);
-    x.font = '18px Arial'; x.fillStyle = '#8a929c'; x.fillText('km/h', W * 0.18, H * 0.66);
-    x.fillText('RACE', W * 0.82, H * 0.38); x.fillStyle = '#c8102e'; x.font = 'bold 30px Arial'; x.fillText('CT OFF', W * 0.82, H * 0.52);
-    x.fillStyle = '#8a929c'; x.font = '18px Arial'; x.fillText('OIL 92°  H2O 88°', W * 0.82, H * 0.68);
-    for (let i = 0; i < 12; i++) { x.fillStyle = i < 8 ? '#3ad16b' : i < 10 ? '#f2c200' : '#c8102e'; x.fillRect(W * 0.08 + i * 18, H * 0.82, 14, 8); }
+    drawCluster(x, W, H, { rpm: 0, mode: 'RACE', gear: 'N', speed: 0, on: false });
   } else if (kind === 'centre') {
     x.fillStyle = '#c8102e'; x.fillRect(0, 0, W, 6);
     x.fillStyle = '#e8ecf1'; x.font = '300 34px Arial'; x.textAlign = 'left'; x.fillText('F-FUTURE', 28, 44);
@@ -62,7 +41,41 @@ function displayTexture(kind) {
     x.fillStyle = '#8a929c'; x.font = '22px Arial'; x.fillText('GEAR N', W * 0.86, H / 2);
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  if (kind === 'cluster') t.userData.redraw = (state) => { drawCluster(x, W, H, state); t.needsUpdate = true; };
   return t;
+}
+
+/** Instrument cluster: yellow rev counter with a live needle, speed and drive-mode panels. */
+function drawCluster(x, W, H, st) {
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#07080a'); bg.addColorStop(1, '#0d0f12');
+  x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const cx = W / 2, cy = H * 0.56, r = H * 0.42;
+  const g = x.createRadialGradient(cx, cy, r * 0.1, cx, cy, r); g.addColorStop(0, '#f6cf2a'); g.addColorStop(1, '#d9a900');
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  x.strokeStyle = '#111'; x.lineWidth = 3;
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI * 0.75 + (i / 10) * Math.PI * 1.5;
+    x.beginPath(); x.moveTo(cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * 0.78); x.lineTo(cx + Math.cos(a) * r * 0.93, cy + Math.sin(a) * r * 0.93); x.stroke();
+    x.fillStyle = i >= 9 ? '#c8102e' : '#111'; x.font = 'bold 22px Arial';
+    x.fillText(String(i), cx + Math.cos(a) * r * 0.64, cy + Math.sin(a) * r * 0.64);
+  }
+  x.strokeStyle = '#c8102e'; x.lineWidth = 7; x.beginPath(); x.arc(cx, cy, r * 0.86, Math.PI * 0.75 + 1.5 * Math.PI * 0.9, Math.PI * 2.25); x.stroke();
+  x.fillStyle = '#111'; x.font = 'bold 60px Arial'; x.fillText(st.gear ?? 'N', cx, cy - 6);
+  x.font = '16px Arial'; x.fillText('x1000 rpm', cx, cy + 46);
+  const na = Math.PI * 0.75 + Math.min(1, Math.max(0, (st.rpm || 0) / 10000)) * Math.PI * 1.5;
+  x.strokeStyle = '#c8102e'; x.lineWidth = 6; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(cx - Math.cos(na) * r * 0.12, cy - Math.sin(na) * r * 0.12); x.lineTo(cx + Math.cos(na) * r * 0.82, cy + Math.sin(na) * r * 0.82); x.stroke();
+  x.fillStyle = '#111'; x.beginPath(); x.arc(cx, cy + 0.0, 9, 0, Math.PI * 2); x.fill();
+  // side panels
+  x.fillStyle = '#e8ecf1'; x.font = '300 64px Arial'; x.fillText(String(Math.round(st.speed || 0)), W * 0.18, H * 0.48);
+  x.font = '18px Arial'; x.fillStyle = '#8a929c'; x.fillText('km/h', W * 0.18, H * 0.66);
+  const modeCol = { WET: '#3aa0ff', SPORT: '#f2c200', RACE: '#c8102e', 'CT OFF': '#ff5a1f' }[st.mode] || '#c8102e';
+  x.fillText('MANETTINO', W * 0.82, H * 0.36); x.fillStyle = modeCol; x.font = 'bold 32px Arial'; x.fillText(st.mode || 'RACE', W * 0.82, H * 0.52);
+  x.fillStyle = '#8a929c'; x.font = '18px Arial'; x.fillText(st.on ? 'OIL 92°  H2O 88°' : 'ENGINE OFF', W * 0.82, H * 0.68);
+  // shift lights
+  const lit = Math.round(Math.min(1, Math.max(0, ((st.rpm || 0) - 3000) / 5500)) * 12);
+  for (let i = 0; i < 12; i++) { x.fillStyle = i >= lit ? '#1b1e22' : i < 8 ? '#3ad16b' : i < 10 ? '#f2c200' : '#c8102e'; x.fillRect(W * 0.08 + i * 18, H * 0.82, 14, 8); }
 }
 
 function screen(M, w, h, kind, name) {
@@ -73,6 +86,7 @@ function screen(M, w, h, kind, name) {
   const s = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); s.name = name + '_Panel';
   const bezel = new THREE.Mesh(rbox(w + 0.012, h + 0.012, 0.012, 0.006), M.blackGloss); bezel.position.z = -0.0065;
   g.add(bezel, s);
+  g.userData.texture = tex;
   return g;
 }
 
@@ -181,22 +195,28 @@ function steeringWheel(M) {
     for (let i = 0; i <= 14; i++) { const a = (s > 0 ? 0 : Math.PI) + (i / 14 - 0.5) * 1.1; grip.push([Math.cos(a) * 0.175, Math.sin(a) * 0.165, 0]); }
     g.add(mesh(tube(grip, 0.0175, 12, 40), M.leather, 'Wheel_Grip'));
   }
-  // carbon hub
-  const hubShape = new THREE.Shape();
-  hubShape.moveTo(-0.16, 0.02); hubShape.quadraticCurveTo(-0.17, 0.07, -0.1, 0.08); hubShape.lineTo(0.1, 0.08); hubShape.quadraticCurveTo(0.17, 0.07, 0.16, 0.02);
-  hubShape.lineTo(0.08, -0.06); hubShape.quadraticCurveTo(0, -0.12, -0.08, -0.06); hubShape.closePath();
-  const hub = new THREE.ExtrudeGeometry(hubShape, { depth: 0.03, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 3 });
-  hub.translate(0, 0, -0.02);
-  g.add(mesh(boxUV(hub, 6), M.carbon, 'Wheel_Hub'));
-  // centre badge, manettino, buttons
-  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.004, 24), M.yellow); badge.rotation.x = Math.PI / 2; badge.position.set(0, 0.035, 0.018);
-  const man = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.016, 20), M.leatherRed); man.rotation.x = Math.PI / 2; man.position.set(0.07, -0.04, 0.02); man.name = 'Manettino';
-  const manRing = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.003, 8, 24), M.alu); manRing.position.set(0.07, -0.04, 0.017);
-  const start = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.01, 20), M.tricolorR); start.rotation.x = Math.PI / 2; start.position.set(-0.07, -0.04, 0.02); start.name = 'EngineStart';
-  g.add(badge, man, manRing, start);
-  for (const [x, y] of [[-0.11, 0.045], [0.11, 0.045], [-0.12, 0.0], [0.12, 0.0]]) {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.008, 14), M.blackGloss); b.rotation.x = Math.PI / 2; b.position.set(x, y, 0.016); g.add(b);
+  // three-spoke hub: leather centre pad, carbon side spokes carrying the controls, slim lower spoke
+  const pad = new THREE.Mesh(rbox(0.118, 0.092, 0.034, 0.03), M.leather); pad.position.set(0, 0.004, -0.004); pad.name = 'Wheel_CentrePad';
+  g.add(pad);
+  for (const sx of [-1, 1]) {
+    const spoke = plate([[0.05, 0.036], [0.165, 0.024], [0.168, -0.012], [0.05, -0.03]], 0.02, 'xy', -0.004, 0.003);
+    const sm = mesh(boxUV(spoke, 8), M.carbon, 'Wheel_Spoke_' + (sx > 0 ? 'R' : 'L')); sm.scale.x = sx;
+    g.add(sm);
+    // thumb controls on each spoke
+    for (const [x, y, r, m] of [[0.092, 0.006, 0.011, M.blackGloss], [0.122, 0.004, 0.0085, M.alu], [0.146, 0.003, 0.0075, M.blackGloss]]) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.008, 18), m); b.rotation.x = Math.PI / 2; b.position.set(sx * x, y, 0.009); g.add(b);
+    }
   }
+  const lower = plate([[-0.02, -0.03], [0.02, -0.03], [0.03, -0.125], [-0.03, -0.125]], 0.018, 'xy', -0.004, 0.003);
+  g.add(mesh(boxUV(lower, 8), M.alu, 'Wheel_Spoke_Lower'));
+  // centre badge, manettino (lower right) and engine start (lower left)
+  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.004, 28), M.yellow); badge.rotation.x = Math.PI / 2; badge.position.set(0, 0.008, 0.015);
+  const badgeRing = new THREE.Mesh(new THREE.TorusGeometry(0.021, 0.002, 8, 28), M.chrome); badgeRing.position.set(0, 0.008, 0.015);
+  const man = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.015, 0.016, 20), M.leatherRed); man.rotation.x = Math.PI / 2; man.position.set(0.062, -0.052, 0.012); man.name = 'Manettino'; man.userData.egg = 'manettino';
+  const manRing = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.0025, 8, 24), M.alu); manRing.position.set(0.062, -0.052, 0.008);
+  const start = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 20), M.tricolorR); start.rotation.x = Math.PI / 2; start.position.set(-0.062, -0.052, 0.012); start.name = 'EngineStart'; start.userData.egg = 'start';
+  const startRing = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.002, 8, 24), M.alu); startRing.position.set(-0.062, -0.052, 0.008);
+  g.add(badge, badgeRing, man, manRing, start, startRing);
   // LED shift lights on the top of the rim
   for (let i = 0; i < 9; i++) {
     const led = new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.005, 0.004), i < 3 ? M.tricolorG : i < 6 ? M.yellow : M.ledRed);
@@ -397,6 +417,13 @@ export function buildInterior(M, mk) {
   group.add(seat(M, DRV, 'Seat_Driver'), seat(M, -DRV, 'Seat_Passenger'));
   group.add(seatBelt(M, DRV), seatBelt(M, -DRV));
   if (mk) { mk.doorR.inner.add(doorCard(M, 1)); mk.doorL.inner.add(doorCard(M, -1)); }
+  // soft cabin lighting (dome + footwell) so the trim reads through the glass and in cockpit mode
+  const dome = new THREE.PointLight(0xfff1e0, 0.9, 2.2, 1.6); dome.position.set(-0.05, 1.02, 0); dome.name = 'Cabin_DomeLight';
+  const foot = new THREE.PointLight(0xff5a48, 0.35, 1.4, 1.8); foot.position.set(0.6, 0.38, 0); foot.name = 'Cabin_AmbientLight';
+  group.add(dome, foot);
   group.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; } });
-  return { group };
+  const eggs = [];
+  group.traverse((o) => { if (o.userData.egg) eggs.push(o); });
+  const clusterTex = group.getObjectByName('InstrumentCluster')?.userData.texture;
+  return { group, lights: [dome, foot], eggs, ambientLight: foot, redrawCluster: clusterTex?.userData.redraw ?? null };
 }

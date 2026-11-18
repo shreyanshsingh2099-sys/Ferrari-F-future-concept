@@ -165,21 +165,16 @@ function taillights(M) {
 }
 
 function exhaust(M) {
+  // one large round black-chrome tip high in each diffuser tunnel (rear diffuser detail sheet)
   const g = new THREE.Group(); g.name = 'ExhaustTips';
   for (const sg of [-1, 1]) {
-    // round titanium tips low in the centre section of the diffuser (rear diffuser detail)
-    const zc = sg * 0.16, y = 0.215;
-    const x = -2.075;
-    // oval titanium sleeve (open lathe scaled to an ellipse), dark core
-    const sleeve = new THREE.Mesh(lathe([[0.03, -0.05], [0.031, -0.004], [0.033, 0.0], [0.03, 0.003], [0.027, -0.002], [0.026, -0.05]], 40), M.titanium);
-    sleeve.scale.set(1, 1, 1);
     const holder = new THREE.Group();
-    holder.add(sleeve);
-    const core = new THREE.Mesh(new THREE.CircleGeometry(0.026, 32), M.cavity); core.position.z = -0.03;
-    holder.add(core);
+    const sleeve = new THREE.Mesh(lathe([[0.043, -0.09], [0.045, -0.006], [0.048, 0.0], [0.045, 0.004], [0.04, -0.002], [0.038, -0.09]], 44), M.exhaustTip);
+    const inner = new THREE.Mesh(lathe([[0.038, -0.09], [0.034, -0.02]], 32), M.titanium);
+    const core = new THREE.Mesh(new THREE.CircleGeometry(0.038, 32), M.cavity); core.position.z = -0.08;
+    holder.add(sleeve, inner, core);
     holder.rotation.y = -Math.PI / 2; // local +z -> world -x (rearward)
-    holder.scale.set(1.35, 1.35, 1);
-    holder.position.set(x, y, zc);
+    holder.position.set(-2.035, 0.298, sg * 0.40);
     holder.name = 'ExhaustTip_' + (sg > 0 ? 'R' : 'L');
     g.add(holder);
   }
@@ -296,7 +291,7 @@ export function buildDetails(M, mk) {
   {
     const y = 0.405, z = 0;
     const x = surfaceX(y, z, 1) ?? 2.43;
-    const b = placeOnSurface(shieldBadge(M, 0.62), x, y, z, 0.001); b.name = 'Badge_Nose';
+    const b = placeOnSurface(shieldBadge(M, 0.62), x, y, z, 0.001); b.name = 'Badge_Nose'; b.userData.egg = 'motto';
     group.add(b);
     const yr = 0.55, xr = surfaceX(yr, 0, -1) ?? -2.12;
     const r = placeOnSurface(shieldBadge(M, 0.55), xr, yr, 0, 0.001); r.name = 'Badge_Tail';

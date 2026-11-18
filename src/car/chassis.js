@@ -95,7 +95,27 @@ function frunk(M) {
     cap.position.set(x, 0.4, z); cap.name = 'Reservoir_Cap';
     g.add(cap);
   }
+  g.add(rubberDuck(M));
   return g;
+}
+
+/** Easter egg: a small rubber duck sitting in the frunk (open the bonnet to find it). */
+function rubberDuck(M) {
+  const d = new THREE.Group(); d.name = 'FrunkDuck'; d.userData.egg = 'duck';
+  const yellow = new THREE.MeshPhysicalMaterial({ name: 'Duck_Yellow', color: 0xffd21f, roughness: 0.35, clearcoat: 0.6 });
+  const orange = new THREE.MeshStandardMaterial({ name: 'Duck_Bill', color: 0xff7a00, roughness: 0.4 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.05, 24, 16), yellow); body.scale.set(1.25, 0.82, 1); body.position.y = 0.04;
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.05, 12), yellow); tail.position.set(-0.062, 0.062, 0); tail.rotation.z = 0.9;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.033, 20, 14), yellow); head.position.set(0.034, 0.094, 0);
+  const bill = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 8), orange); bill.scale.set(1.5, 0.45, 1.1); bill.position.set(0.068, 0.088, 0);
+  d.add(body, tail, head, bill);
+  for (const s of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 8, 6), M.blackGloss); eye.position.set(0.054, 0.103, s * 0.02); d.add(eye);
+    const wing = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), yellow); wing.scale.set(1.1, 0.6, 0.35); wing.position.set(-0.008, 0.05, s * 0.046); d.add(wing);
+  }
+  d.position.set(1.72, 0.365, -0.12); d.rotation.y = 0.5;
+  d.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return d;
 }
 
 function engineBay(M) {

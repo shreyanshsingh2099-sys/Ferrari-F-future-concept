@@ -50,7 +50,10 @@ export function buildEngine(M) {
     const coilM = mesh(mergeGeometries(coils), M.engineBlack, 'CoilPacks');
     // cam drive covers at the front of each head
     const camEnd = new THREE.Mesh(rbox(0.05, 0.16, 0.22, 0.03), M.aluDark); camEnd.position.set(X0 + 0.09, 0.36, 0); camEnd.name = 'CamDriveCover';
-    bank.add(barrel, head, cover, finMesh, plateM, coilM, camEnd);
+    // oil filler cap and the ignition harness running over the coil packs
+    const filler = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.024, 0.016, 20), M.yellow); filler.position.set(X0 + 0.01, 0.474, side * 0.055); filler.name = 'OilFillerCap';
+    const harness = mesh(rod([X0 + 0.05, 0.499, side * -0.06], [X0 - 5 * PITCH - 0.05, 0.499, side * -0.06], 0.007, 8), M.hose, 'IgnitionHarness');
+    bank.add(barrel, head, cover, finMesh, plateM, coilM, camEnd, filler, harness);
     v12.add(bank);
 
     // exhaust headers: from the outer side of each head, sweeping down and back to a 6-into-1 collector
@@ -126,7 +129,7 @@ export function buildEngine(M) {
   group.add(sil);
   for (const side of [-1, 1]) {
     group.add(mesh(tube([[-1.86, 0.44, side * 0.2], [-1.87, 0.50, side * 0.18]], 0.035, 12, 10), M.titanium, 'ExhaustPipe'));
-    group.add(mesh(tube([[-1.92, 0.50, side * 0.14], [-1.98, 0.32, side * 0.16], [-2.03, 0.215, side * 0.16], [-2.06, 0.215, side * 0.16]], 0.03, 12, 24), M.titanium, 'TailPipe'));
+    group.add(mesh(tube([[-1.9, 0.5, side * 0.2], [-1.93, 0.38, side * 0.34], [-1.97, 0.3, side * 0.40], [-2.03, 0.298, side * 0.40]], 0.036, 12, 24), M.titanium, 'TailPipe'));
   }
   // dry-sump oil tank & coolant pipes to the side radiators
   const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 24), M.alu); tank.position.set(-0.62, 0.35, 0.38); tank.name = 'OilTank';
@@ -134,6 +137,10 @@ export function buildEngine(M) {
   for (const side of [-1, 1]) {
     group.add(mesh(tube([[-0.5, 0.5, side * 0.12], [-0.55, 0.62, side * 0.4], [-0.78, 0.64, side * 0.6]], 0.02, 10, 30), M.hose, 'CoolantHose'));
   }
+  // coolant header tank
+  const header = new THREE.Mesh(rbox(0.11, 0.09, 0.16, 0.025), M.engineBlack); header.position.set(-0.64, 0.58, -0.40); header.name = 'CoolantHeaderTank';
+  const hcap = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.014, 20), M.yellow); hcap.position.set(-0.64, 0.632, -0.40); hcap.name = 'CoolantCap';
+  group.add(header, hcap);
   // engine mounts
   for (const side of [-1, 1]) group.add(mesh(rod([xc, 0.22, side * 0.17], [xc, 0.14, side * 0.36], 0.018), M.aluDark, 'EngineMount'));
 

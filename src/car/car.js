@@ -152,8 +152,8 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
   const xrayEdge = new THREE.MeshBasicMaterial({ color: 0x8a0710, wireframe: true, transparent: true, opacity: 0.05, depthWrite: false });
 
   const anchors = {
-    driverEye: new THREE.Vector3(-0.36, 0.89, -0.37),
-    driverLook: new THREE.Vector3(0.9, 0.76, -0.37),
+    driverEye: new THREE.Vector3(-0.40, 0.99, -0.13),
+    driverLook: new THREE.Vector3(0.75, 0.62, -0.22),
     engine: new THREE.Vector3(-1.2, 0.62, 0),
   };
 
@@ -186,6 +186,7 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
     setLights(on) {
       api.lightsOn = on;
       lightMats.forEach((m, i) => { m.emissiveIntensity = on ? lightBase[i] : 0.0; });
+      (interior.lights || []).forEach((l) => { l.visible = on; });
       engine.setLights?.(on);
     },
     setXray(on) {
@@ -207,6 +208,18 @@ export async function buildCar({ onProgress = () => {}, detail = 'full' } = {}) 
       wheels.update?.(dt);
       interior.update?.(dt);
     },
+  };
+  // hooks for the interactive extras (src/viewer/fun.js)
+  const eggs = [...(interior.eggs || [])];
+  root.traverse((o) => { if (o.userData.egg && !eggs.includes(o)) eggs.push(o); });
+  api.fun = {
+    wheels: Object.values(wheels.wheels),
+    groups: { Body: body, Door_L: mk.doorL.pivot, Door_R: mk.doorR.pivot, Bonnet: mk.hood.pivot, EngineCover: mk.engineCover.pivot, Aero: aero.group, Chassis: chassis.group, Interior: interior.group, Powertrain: engine.group },
+    eggs,
+    redrawCluster: interior.redrawCluster,
+    ambientLight: interior.ambientLight,
+    exhaustTips: [new THREE.Vector3(-2.04, 0.298, 0.40), new THREE.Vector3(-2.04, 0.298, -0.40)],
+    headlightMat: M.ledWhite, tailMat: M.ledRed,
   };
   // mesh / triangle statistics
   let tris = 0, meshes = 0;

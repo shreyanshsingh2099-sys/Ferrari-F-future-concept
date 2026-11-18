@@ -17,3 +17,14 @@ node tools/shoot.mjs $T mode:interior "quality=high" && cp $T/mode_interior.png 
 node tools/shoot.mjs $T mode:engine "quality=high" && cp $T/mode_engine.png qa/render_v12.png
 node tools/shoot.mjs $T mode:engineering "quality=high&ui=1" && cp $T/mode_engineering.png qa/render_engineering_ui.png
 node tools/shoot.mjs $T hero "quality=high&theme=dark&ui=1" && cp $T/hero.png qa/render_dark_studio_ui.png
+# fun features: one composite sheet (wind tunnel, exploded view, paint, frunk duck, exhaust flames, cockpit)
+SHOTS='{"wind":{"cam":[4.2,1.9,-4.6],"target":[0,0.6,0],"fov":30,"js":"q.fun.set(\"wind\",true,true)"},"explode":{"cam":[4.6,2.6,-5.2],"target":[0,0.9,0],"fov":32,"js":"q.fun.set(\"wind\",false);q.fun.set(\"explode\",true,true)"},"paint":{"cam":[4.6,1.5,-3.4],"target":[0.3,0.5,0],"fov":30,"js":"q.fun.set(\"explode\",false,true);q.fun.setPaint(\"blu\",true)"},"duck":{"cam":[2.9,1.25,-0.9],"target":[1.72,0.42,-0.12],"fov":30,"open":["hood"],"js":"q.fun.setPaint(\"rosso\",true)"},"flames":{"cam":[-4.4,0.8,-1.9],"target":[-1.9,0.45,0],"fov":30,"js":"q.fun.set(\"engine\",true);q.fun.redline();q.step(1.5)"},"wheel":{"cam":[1.55,0.42,-2.5],"target":[1.35,0.34,-0.9],"fov":26,"js":"q.fun.set(\"engine\",false)"}}' W=900 H=560 node tools/dev/contact.mjs $T/fun
+python3 - <<PY
+from PIL import Image
+S='$T/fun/'
+ims=[Image.open(S+n+'.png') for n in ['wind','explode','paint','duck','flames','wheel']]
+w,h=ims[0].size; c=Image.new('RGB',(w*2+6,h*3+12),'white')
+for i,im in enumerate(ims): c.paste(im,((i%2)*(w+6),(i//2)*(h+6)))
+c=c.resize((c.width*2//3,c.height*2//3),Image.LANCZOS); c.save('qa/render_fun_features.png'); print('wrote qa/render_fun_features.png')
+PY
+
