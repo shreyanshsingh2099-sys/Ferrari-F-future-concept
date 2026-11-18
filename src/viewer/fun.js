@@ -1,5 +1,5 @@
 // Interactive extras for the studio viewer:
-//  - engine start / rev with a synthesised V12 note, live rev counter, exhaust flames
+//  - engine start / rev with a physically modelled V12 (AudioWorklet), live rev counter, exhaust flames
 //  - rolling road (spinning wheels, scrolling floor), wind-tunnel streamlines, exploded view
 //  - paint swatches, and a handful of easter eggs with a "secrets" counter
 import * as THREE from 'three';
@@ -7,6 +7,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { makeFieldCache } from '../car/bodyShape.js';
+import { EngineAudio, starterRPM, STARTER_TIME } from './audio/engine.js';
 
 export const PAINTS = [
   { id: 'rosso', name: 'Rosso F-Future', color: 0x96101a, metalness: 0.42, roughness: 0.24 },
@@ -32,85 +33,6 @@ const MODES = [
 ];
 const MOTTO = '“Il mito è l’unico sogno che non invecchia mai”';
 const KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
-
-// ---------------------------------------------------------------------------
-// Sound: everything is synthesised with WebAudio (no audio files).
-// ---------------------------------------------------------------------------
-class Sound {
-  constructor() { this.ctx = null; this.engine = null; }
-  ensure() {
-    if (!this.ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return null;
-      this.ctx = new AC();
-      this.master = this.ctx.createGain(); this.master.gain.value = 0.55;
-      const comp = this.ctx.createDynamicsCompressor();
-      this.master.connect(comp); comp.connect(this.ctx.destination);
-    }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    return this.ctx;
-  }
-  startEngine() {
-    const ctx = this.ensure();
-    if (!ctx || this.engine) return;
-    const out = ctx.createGain(); out.gain.value = 0;
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1.2;
-    const shaper = ctx.createWaveShaper();
-    const curve = new Float32Array(512);
-    for (let i = 0; i < 512; i++) { const x = (i / 511) * 2 - 1; curve[i] = Math.tanh(2.6 * x); }
-    shaper.curve = curve;
-    // firing fundamental (6 per rev) with a half-order rumble and a bright second harmonic
-    const oscs = [['sawtooth', 1, 0.5, -6], ['sawtooth', 0.5, 0.42, 5], ['square', 2, 0.16, 9], ['sawtooth', 1.5, 0.1, -11]].map(([type, mult, gain, detune]) => {
-      const o = ctx.createOscillator(); o.type = type; o.detune.value = detune;
-      const g = ctx.createGain(); g.gain.value = gain;
-      o.connect(g); g.connect(shaper); o.start();
-      return { o, mult };
-    });
-    shaper.connect(filter); filter.connect(out); out.connect(this.master);
-    // intake / exhaust rush
-    const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
-    const band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.8;
-    const ng = ctx.createGain(); ng.gain.value = 0;
-    noise.connect(band); band.connect(ng); ng.connect(this.master); noise.start();
-    this.engine = { out, filter, oscs, noise, band, ng };
-    this.setRPM(900, 0);
-  }
-  setRPM(rpm, load) {
-    const e = this.engine; if (!e) return;
-    const t = this.ctx.currentTime, f = (rpm / 60) * 6;
-    for (const { o, mult } of e.oscs) o.frequency.setTargetAtTime(f * mult, t, 0.03);
-    e.filter.frequency.setTargetAtTime(500 + rpm * 0.62, t, 0.05);
-    e.out.gain.setTargetAtTime(0.085 + 0.13 * Math.min(1, rpm / 8500) + 0.05 * load, t, 0.05);
-    e.band.frequency.setTargetAtTime(900 + rpm * 0.28, t, 0.05);
-    e.ng.gain.setTargetAtTime(0.012 + 0.05 * load * Math.min(1, rpm / 7000), t, 0.05);
-  }
-  stopEngine() {
-    const e = this.engine; if (!e) return;
-    const t = this.ctx.currentTime;
-    e.out.gain.setTargetAtTime(0, t, 0.12); e.ng.gain.setTargetAtTime(0, t, 0.08);
-    for (const { o } of e.oscs) { o.frequency.setTargetAtTime(20, t, 0.25); o.stop(t + 0.9); }
-    e.noise.stop(t + 0.9);
-    this.engine = null;
-  }
-  tone(freqs, { type = 'square', dur = 0.5, gain = 0.12, slideTo = null } = {}) {
-    const ctx = this.ensure(); if (!ctx) return;
-    const t = ctx.currentTime;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + 0.015); g.gain.setTargetAtTime(0, t + dur * 0.75, dur * 0.12);
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
-    lp.connect(g); g.connect(this.master);
-    for (const f of freqs) {
-      const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
-      if (slideTo) o.frequency.exponentialRampToValueAtTime(f * slideTo, t + dur);
-      o.connect(lp); o.start(t); o.stop(t + dur + 0.3);
-    }
-  }
-  horn() { this.tone([415, 523], { dur: 0.55, gain: 0.1 }); }
-  quack() { this.tone([620], { type: 'sawtooth', dur: 0.16, gain: 0.14, slideTo: 0.55 }); }
-  chime() { this.tone([880, 1318.5], { type: 'sine', dur: 0.5, gain: 0.08 }); }
-  pop() { this.tone([70], { type: 'square', dur: 0.09, gain: 0.2, slideTo: 0.5 }); }
-}
 
 // ---------------------------------------------------------------------------
 // Wind tunnel: streamlines integrated around the implicit body surface.
@@ -153,10 +75,9 @@ function buildStreamlines() {
 }
 
 // ---------------------------------------------------------------------------
-export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onState = () => {} }) {
+export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onState = () => {}, sound = new EngineAudio() }) {
   const F = car.fun, M = car.materials;
-  const sound = new Sound();
-  const S = { engine: false, rev: false, rolling: false, wind: false, explode: false, rpm: 0, speed: 0, mode: 2, paint: 'rosso', burst: 0 };
+  const S = { crank: -1, engine: false, rev: false, rolling: false, wind: false, explode: false, rpm: 0, speed: 0, mode: 2, paint: 'rosso', burst: 0 };
   const paint0 = { color: M.paint.color.clone(), metalness: M.paint.metalness, roughness: M.paint.roughness };
 
   // ---- secrets ----
@@ -233,8 +154,8 @@ export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onS
         case 'engine':
           if (S.engine === on) break;
           S.engine = on;
-          if (on) { sound.startEngine(); S.rpm = Math.max(S.rpm, 300); S.burst = 1; toast('Engine started · hold Rev or Space'); }
-          else { sound.stopEngine(); S.rev = false; toast('Engine off'); }
+          if (on) { sound.startEngine(); S.crank = 0; S.burst = 0; toast('Engine started · hold Rev or Space'); }
+          else { sound.stopEngine(); S.rev = false; S.crank = -1; toast('Engine off'); }
           clusterDirty = true;
           break;
         case 'rev': S.rev = on && S.engine; break;
@@ -303,7 +224,7 @@ export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onS
       if (!o) return false;
       switch (o.userData.egg) {
         case 'motto':
-          knocks++; knockTimer = 2.5; sound.tone([180 + knocks * 25], { type: 'sine', dur: 0.08, gain: 0.12 });
+          knocks++; knockTimer = 2.5; sound.tone([180 + knocks * 25], { type: 'sine', dur: 0.08, gain: 0.1 });
           if (knocks >= 5) {
             knocks = 0; sound.horn(); flash = 1.6;
             const fresh = reveal('motto');
@@ -326,18 +247,27 @@ export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onS
 
     update(dt) {
       // --- engine speed ---
-      if (S.engine) {
+      if (S.engine && S.crank >= 0 && S.crank < 1.6) {
+        // key turned: starter cranks, the V12 catches, flares and settles to idle
+        S.crank += dt;
+        S.rpm = starterRPM(S.crank);
+        sound.setRPM(S.rpm, S.crank < STARTER_TIME ? 0 : 0.35);
+        car.root.position.y = (Math.random() - 0.5) * (S.crank < STARTER_TIME ? 0.0025 : 0.0012);
+        car.root.rotation.x = S.crank > STARTER_TIME && S.crank < STARTER_TIME + 0.3 ? 0.004 : 0;
+        if (S.crank >= 1.6) S.crank = -1;
+        clusterDirty = true;
+      } else if (S.engine) {
         if (S.burst > 0) S.burst -= dt;
         const revving = S.rev || S.burst > 0.9;
-        const target = revving ? 8900 : S.rolling ? 3400 : 950;
-        const k = target > S.rpm ? 3.4 : 2.0;
+        const target = revving ? 9100 : S.rolling ? 3400 : 950;
+        // free-revving engine: fast to rise under full throttle, slower to fall (inertia, pumping losses)
+        const k = target > S.rpm ? 2.6 : 1.5;
         const prev = S.rpm;
         S.rpm += (target - S.rpm) * Math.min(1, k * dt);
-        S.rpm += (Math.random() - 0.5) * (S.rpm < 1500 ? 26 : 60);
-        sound.setRPM(S.rpm, revving ? 1 : 0.15);
-        // flames: at the top of the range, and pops on a lift-off
-        const hot = S.rpm > 7600 || (prev - S.rpm > 40 && S.rpm > 4200 && Math.random() < 0.3);
-        if (hot && prev - S.rpm > 40 && Math.random() < 0.08) sound.pop();
+        S.rpm += (Math.random() - 0.5) * (S.rpm < 1500 ? 14 : 30);
+        sound.setRPM(S.rpm, revving ? 1 : S.rolling ? 0.25 : 0.06);
+        // flames: at the top of the range, and on a lift-off (the worklet makes the pops itself)
+        const hot = S.rpm > 7800 || (prev - S.rpm > 40 && S.rpm > 4200 && Math.random() < 0.3);
         const a = hot ? 0.55 + Math.random() * 0.4 : 0;
         flameMat.opacity += (a - flameMat.opacity) * Math.min(1, 14 * dt); coreMat.opacity = flameMat.opacity * 0.9;
         for (const f of flames) { f.visible = flameMat.opacity > 0.03; f.scale.set(0.8 + Math.random() * 0.5, 0.6 + Math.random() * 0.9, 0.8 + Math.random() * 0.5); }
@@ -346,6 +276,7 @@ export function createFun({ car, scene, studio, toast, onSecrets = () => {}, onS
         car.root.rotation.x = THREE.MathUtils.clamp((S.rpm - prev) * 0.00002, -0.004, 0.006);
       } else if (S.rpm > 0 || flameMat.opacity > 0) {
         S.rpm = Math.max(0, S.rpm - 2600 * dt);
+        sound.setRPM(S.rpm, 0);
         flameMat.opacity = 0; coreMat.opacity = 0; for (const f of flames) f.visible = false;
         car.root.position.y = 0; car.root.rotation.x = 0;
         clusterDirty = true;

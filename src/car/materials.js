@@ -68,21 +68,6 @@ function makeCarbon({ cells = 8, size = 512, base = [24, 24, 27], hi = [86, 88, 
   return { map: texFrom(c), aniso: texFrom(ca, { srgb: false }) };
 }
 
-function makeFlakeNormal(size = 256) {
-  const c = canvas(size, size), ctx = c.getContext('2d');
-  const img = ctx.createImageData(size, size);
-  const R = rng(3);
-  for (let i = 0; i < size * size; i++) {
-    const a = R() * Math.PI * 2, r = Math.pow(R(), 2) * 0.35;
-    img.data[4 * i] = 128 + Math.cos(a) * r * 127;
-    img.data[4 * i + 1] = 128 + Math.sin(a) * r * 127;
-    img.data[4 * i + 2] = 255;
-    img.data[4 * i + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
-  return texFrom(c, { srgb: false });
-}
-
 function makeNoiseTex(size, fn, srgb = true) {
   const c = canvas(size, size), ctx = c.getContext('2d');
   const img = ctx.createImageData(size, size);
@@ -157,15 +142,12 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   const M = {};
   const carbon = HAS_DOM ? makeCarbon({}) : null;
   const carbonRed = HAS_DOM ? makeCarbon({ base: [26, 8, 10], hi: [96, 24, 30] }) : null;
-  const flakes = HAS_DOM ? makeFlakeNormal() : null;
-  if (flakes) flakes.repeat.set(60, 60);
   if (carbon) { carbon.map.repeat.set(22, 22); carbon.aniso.repeat.set(22, 22); }
   if (carbonRed) { carbonRed.map.repeat.set(22, 22); carbonRed.aniso.repeat.set(22, 22); }
 
   M.paint = new THREE.MeshPhysicalMaterial({
     name: 'Paint_RossoFuture', color: paint, metalness: 0.42, roughness: 0.24,
-    clearcoat: 1.0, clearcoatRoughness: 0.02, envMapIntensity: 1.15,
-    normalMap: flakes, normalScale: new THREE.Vector2(0.06, 0.06),
+    clearcoat: 1.0, clearcoatRoughness: 0.03, envMapIntensity: 1.15,
   });
   M.paintInner = new THREE.MeshStandardMaterial({ name: 'Paint_Inner', color: 0x5a060c, metalness: 0.3, roughness: 0.6 });
   M.carbon = new THREE.MeshPhysicalMaterial({
@@ -222,7 +204,7 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   M.gold = new THREE.MeshStandardMaterial({ name: 'Gold_Foil', color: 0xd9a33a, metalness: 1, roughness: 0.25 });
   M.rim = new THREE.MeshPhysicalMaterial({ name: 'Rim_Graphite', color: 0x6d7077, metalness: 0.6, roughness: 0.42, clearcoat: 0.45, clearcoatRoughness: 0.22 });
   M.rimMachined = new THREE.MeshStandardMaterial({ name: 'Rim_Machined', color: 0x9da1a8, metalness: 1, roughness: 0.2 });
-  M.tyre = new THREE.MeshStandardMaterial({ name: 'Tyre_Rubber', color: 0x141414, metalness: 0, roughness: 0.82 });
+  M.tyre = new THREE.MeshStandardMaterial({ name: 'Tyre_Rubber', color: 0x111111, metalness: 0, roughness: 0.88, envMapIntensity: 0.7 });
   if (HAS_DOM) {
     const sw = makeTyreSidewall();
     M.tyreSide = new THREE.MeshStandardMaterial({ name: 'Tyre_Sidewall', color: 0x141414, roughness: 0.8, bumpMap: sw, bumpScale: 1.5 });
@@ -278,6 +260,7 @@ export function createMaterials({ paint = 0x96101a } = {}) {
   // Body panels are double sided: the inside of the shell renders as a dark trim lining
   // (so the cockpit and open door apertures never reveal the background through a panel).
   for (const k of ['paint', 'carbonRed', 'blackGloss', 'carbon', 'carbonDark']) lineBackface(M[k]);
+  paintMicrostructure(M.paint);
 
   M.liner = new THREE.MeshStandardMaterial({ name: 'Wheelarch_Liner', color: 0x0b0b0c, roughness: 0.95, side: THREE.DoubleSide });
   M.underbody = new THREE.MeshStandardMaterial({ name: 'Underbody', color: 0x0d0d0e, roughness: 0.8 });
@@ -299,6 +282,41 @@ function lineBackface(mat) {
       }`);
   };
   mat.customProgramCacheKey = () => 'lined-' + mat.name;
+}
+
+/**
+ * Paint micro-structure without UVs (the body is an implicit surface): metallic flakes are hashed
+ * from object-space cells of ~0.7 mm and tilt the base-layer normal, so highlights sparkle up close;
+ * a gentle orange-peel ripple on the clear coat makes reflections of straight strip lights waver
+ * very slightly, like real sprayed lacquer. Both fade out once smaller than a pixel (no aliasing).
+ */
+function paintMicrostructure(mat) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    prev?.(sh, r);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintPos = position;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPos;')
+      .replace('#include <clearcoat_normal_fragment_maps>', `#include <clearcoat_normal_fragment_maps>
+        {
+          vec3 pp = vPaintPos;
+          float px = length(fwidth(pp));
+          vec3 cell = floor(pp * 1400.0);
+          vec3 rnd = fract(sin(vec3(dot(cell, vec3(127.1, 311.7, 74.7)), dot(cell, vec3(269.5, 183.3, 246.1)), dot(cell, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;
+          float fk = 1.0 - smoothstep(0.7, 2.2, px * 1400.0);
+          normal = normalize(normal + rnd * 0.22 * fk);
+          #ifdef USE_CLEARCOAT
+            vec3 q = pp * 1500.0;
+            vec3 g = vec3(cos(q.x + 1.7 * sin(q.z * 0.7)), cos(q.y * 1.13 + 1.3 * sin(q.x * 0.6)), cos(q.z * 0.91 + 1.1 * sin(q.y * 0.8)));
+            float pk = 1.0 - smoothstep(0.5, 1.6, px * 1500.0 / 6.2832);
+            clearcoatNormal = normalize(clearcoatNormal + g * 0.0028 * pk);
+          #endif
+        }`);
+  };
+  const key = mat.customProgramCacheKey;
+  mat.customProgramCacheKey = () => key.call(mat) + '-micro';
 }
 
 /** Planar/box UV projection in metres for generated parts (for textures like carbon). */
