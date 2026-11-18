@@ -284,8 +284,9 @@ export function createEngineering({ car, scene, camera, controls, canvas, flyTo,
 
   // ---------------------------------------------------------------- section plane
   const plane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
-  let secOn = false, secAxis = 'x', secFlip = false;
-  const planeViz = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffc400, transparent: true, opacity: 0.06, side: THREE.DoubleSide, depthWrite: false }));
+  let secOn = false, secAxis = 'x', secFlip = false, secCamSide = 1;
+  const camSideFor = (axis, v) => Math.sign(camera.position.getComponent({ x: 0, y: 1, z: 2 }[axis]) - v) || 1;
+  const planeViz = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffc400, transparent: true, opacity: 0.022, side: THREE.DoubleSide, depthWrite: false }));
   const planeEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0xffc400, transparent: true, opacity: 0.7 }));
   planeViz.add(planeEdge); planeViz.userData.engHelper = true; planeViz.visible = false; planeViz.raycast = () => {};
   scene.add(planeViz);
@@ -296,10 +297,11 @@ export function createEngineering({ car, scene, camera, controls, canvas, flyTo,
   }
   function updatePlane() {
     const v = +$('secPos').value;
-    const n = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) }[secAxis].clone();
-    if (secFlip) n.negate();
-    // keep the half-space on the "behind" side of the plane: points with n·p + c >= 0 are kept
-    plane.normal.copy(n).negate(); plane.constant = secFlip ? -v : v;
+    const n = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) }[secAxis];
+    // three.js keeps points with normal·p + constant >= 0. By default remove the half facing the
+    // camera (side chosen when the plane is enabled or its axis changes), so you look into the cut.
+    const sgn = secCamSide * (secFlip ? -1 : 1);
+    plane.normal.copy(n).multiplyScalar(-sgn); plane.constant = sgn * v;
     $('secOut').textContent = `${Math.round(v * 1000)} mm`;
     // visualiser sized to the car
     planeViz.position.set(secAxis === 'x' ? v : 0, secAxis === 'y' ? v : 0.6, secAxis === 'z' ? v : 0);
@@ -309,6 +311,7 @@ export function createEngineering({ car, scene, camera, controls, canvas, flyTo,
     else { planeViz.rotation.x = -Math.PI / 2; planeViz.scale.set(5.0, 2.4, 1); }
   }
   function setSection(on) {
+    if (on && !secOn) secCamSide = camSideFor(secAxis, +$('secPos').value);
     secOn = on;
     planeViz.visible = on;
     $('insSection').hidden = !on && tool !== 'section';
@@ -320,6 +323,7 @@ export function createEngineering({ car, scene, camera, controls, canvas, flyTo,
     const r = { x: [-2.6, 2.6, 0], y: [0.02, 1.2, 0.6], z: [-1.05, 1.05, 0] }[a];
     const s = $('secPos'); s.min = r[0]; s.max = r[1]; s.value = r[2];
     document.querySelectorAll('#secAxis button').forEach((b) => b.classList.toggle('active', b.dataset.axis === a));
+    secCamSide = camSideFor(a, r[2]); secFlip = false;
     updatePlane();
   }
 

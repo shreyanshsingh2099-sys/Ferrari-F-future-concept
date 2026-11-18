@@ -161,6 +161,7 @@ export function createDrive({ renderer, scene, camera, controls, car, studio, so
   function cycleCam() { const order = ['chase', 'hood', 'cockpit', 'tv']; setCam(order[(order.indexOf(camMode) + 1) % order.length]); }
   function setCam(m) {
     camMode = m; camInit = false;
+    document.body.dataset.cam = active ? m : '';
     document.querySelectorAll('#driveCam button').forEach((b) => b.classList.toggle('active', b.dataset.cam === m));
     sound.setPerspective(m === 'cockpit' || m === 'hood' ? 1 : 0);
   }
@@ -250,7 +251,9 @@ export function createDrive({ renderer, scene, camera, controls, car, studio, so
     $('hudTC').className = veh.tcAct || veh.escAct ? 'act' : veh.mode === 'CT OFF' ? '' : 'on';
     $('hudABS').className = veh.absAct ? 'act' : 'on';
     $('hudDRS').className = veh.wing ? 'act' : 'on';
-    $('hudLapTime').textContent = lap.armed ? fmt(lap.t) : challenge === 'launch' ? (launch.state === 'run' ? launch.t.toFixed(2) + ' s' : launch.state === 'done' ? launch.t.toFixed(2) + ' s' : '0.00 s') : fmt(0);
+    const lt = $('hudLapTime');
+    lt.textContent = lap.armed ? fmt(lap.t) : challenge === 'launch' ? (launch.state === 'run' || launch.state === 'done' ? launch.t.toFixed(2) + ' s' : '0.00 s') : '-:--.---';
+    lt.classList.toggle('idle', !lap.armed && !(challenge === 'launch' && launch.state !== 'ready'));
     $('hudBest').textContent = challenge === 'launch' ? (launch.best ? launch.best.toFixed(2) + ' s' : '–') : fmt(lap.best);
     $('hudLast').textContent = fmt(lap.last);
     const dEl = $('hudDelta');
@@ -473,6 +476,7 @@ export function createDrive({ renderer, scene, camera, controls, car, studio, so
       controls.enabled = true;
       if (running) { sound.stopEngine(); running = false; crank = -1; }
       sound.stopDrive(); sound.setOutdoor(false); sound.setPerspective(0);
+      document.body.dataset.cam = '';
       $('driveIntro').classList.remove('gone');
     },
     update(dt) {

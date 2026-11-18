@@ -14,8 +14,8 @@
   --line: rgba(255, 255, 255, 0.075);
   --line-2: rgba(255, 255, 255, 0.14);
   --text: #e9eaec;
-  --text-2: #a3a7ae;
-  --text-3: #6c717a;
+  --text-2: #b1b5bb;
+  --text-3: #8a8f98;
   --accent: #d5222e;
   --accent-ink: #fff;
   --giallo: #f2c200;
@@ -142,7 +142,8 @@ input[type="search"]:focus { border-color: var(--line-2); }
 #modes { left: 50%; transform: translateX(-50%); bottom: calc(var(--status) + 22px); }
 
 /* ---------- engineering ---------- */
-#toolbar { top: calc(var(--top) + env(safe-area-inset-top) + var(--gap)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); }
+#toolbar { top: calc(var(--top) + env(safe-area-inset-top) + var(--gap)); left: calc(264px + 2 * var(--gap)); right: calc(var(--panel-w) + 2 * var(--gap)); width: fit-content; max-width: calc(100% - 264px - var(--panel-w) - 4 * var(--gap)); margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); }
+@media (max-width: 1380px) { #toolbar .tool span { display: none; } #toolbar button { padding: 0 8px; } }
 #toolbar .group { display: flex; gap: 2px; padding-right: 6px; border-right: 1px solid var(--line); }
 #toolbar .group:last-child { border-right: 0; padding-right: 0; }
 #toolbar button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--text-2); height: 30px; padding: 0 10px; border-radius: var(--radius); font-size: 12px; }
@@ -175,9 +176,11 @@ input[type="search"]:focus { border-color: var(--line-2); }
 /* ---------- drive ---------- */
 body[data-ws="drive"] #statusbar { opacity: 0.0; pointer-events: none; }
 #hud { position: fixed; inset: calc(var(--top) + env(safe-area-inset-top)) 0 0 0; pointer-events: none; z-index: 5; }
-.hud-tl { position: absolute; left: 22px; top: 18px; }
+.hud-tl { position: absolute; left: 18px; top: 14px; padding: 10px 14px 10px; background: rgba(8, 9, 11, 0.55); border: 1px solid var(--line); border-radius: 8px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); min-width: 220px; }
+.hud-tl .challenge:empty { display: none; }
 .lap .lbl { display: block; font-size: 10px; letter-spacing: 0.2em; color: var(--text-3); text-transform: uppercase; }
-.lap b { font-size: 34px; font-weight: 500; letter-spacing: -0.01em; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6); }
+.lap b { font-size: 30px; font-weight: 500; letter-spacing: -0.01em; }
+.lap b.idle { color: var(--text-3); }
 .lapsub { display: flex; gap: 14px; font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
 .lapsub b { color: var(--text); font-weight: 500; }
 .delta.neg { color: var(--ok); }
@@ -229,6 +232,9 @@ kbd { display: inline-grid; place-items: center; min-width: 22px; height: 20px; 
 body[data-ws="drive"] #setup:not(.collapsed) ~ #driveCam { display: none; }
 #touch { display: none; }
 body.touch[data-ws="drive"] #touch { display: block; }
+@media (pointer: coarse) { .panel button:not(.icon):not(.head-btn):not(.vis), .panel .btn { min-height: 42px; } .seg button { min-height: 38px !important; } .icon { width: 42px; height: 42px; } }
+body[data-cam="cockpit"] .cluster, body[data-cam="cockpit"] #gmeter, body[data-cam="cockpit"] .pedals { opacity: 0.0; pointer-events: none; }
+body[data-cam="cockpit"] .hud-bottom::after { content: "speed and gear on the steering-wheel display"; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; color: var(--text-3); letter-spacing: 0.06em; }
 #touch .steer, #touch .pedal { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); display: flex; gap: 10px; z-index: 7; }
 #touch .steer { left: 16px; }
 #touch .pedal { right: 16px; }
@@ -281,7 +287,7 @@ body.touch[data-ws="drive"] #touch { display: block; }
   .caption { left: 16px; bottom: auto; top: calc(var(--top) + env(safe-area-inset-top) + 14px); }
   .caption h1 { font-size: 22px; }
   #modes { bottom: calc(14px + env(safe-area-inset-bottom)); width: calc(100% - 16px); }
-  #toolbar { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); width: calc(100% - 16px); overflow-x: auto; justify-content: flex-start; }
+  #toolbar { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); left: 8px; right: 8px; width: auto; max-width: none; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
   #toolbar .group { flex: none; }
   .hud-tl { left: 14px; top: 10px; }
   .lap b { font-size: 24px; }
