@@ -70,6 +70,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #panel select { font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--glass-strong); color: var(--ink); }
 .hint { font-size: 10.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }
 
+#panel h2 .aside { float: right; letter-spacing: 0.04em; text-transform: none; color: var(--ink); font-weight: 500; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+#panel .swatches button { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--glass-strong); box-shadow: 0 0 0 1px var(--line); background: var(--sw); }
+#panel .swatches button.on { box-shadow: 0 0 0 2px var(--accent); }
+#panel button.hold:active, #panel button.hold.on { background: var(--yellow); border-color: var(--yellow); color: #111; }
+#secrets summary { cursor: pointer; font-size: 11.5px; }
+#secretList { margin: 8px 0 0; padding: 0; list-style: none; font-size: 11px; line-height: 1.45; color: var(--ink-soft); }
+#secretList li { padding: 3px 0 3px 18px; position: relative; }
+#secretList li::before { content: "?"; position: absolute; left: 0; top: 3px; width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--line); font-size: 9px; line-height: 12px; text-align: center; }
+#secretList li.found { color: var(--ink); }
+#secretList li.found::before { content: "✓"; background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* design-note labels */
 #labels { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
 .note { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; }
@@ -80,7 +92,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .note.left .card { left: auto; right: 18px; }
 .note.hidden { display: none; }
 
-#toast { position: fixed; left: 50%; top: 18px; transform: translate(-50%, -20px); opacity: 0; background: var(--glass-strong); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font-size: 12px; letter-spacing: 0.06em; transition: all 0.3s; z-index: 7; pointer-events: none; }
+#toast { max-width: min(92vw, 560px); text-align: center; position: fixed; left: 50%; top: 18px; transform: translate(-50%, -20px); opacity: 0; background: var(--glass-strong); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font-size: 12px; letter-spacing: 0.06em; transition: all 0.3s; z-index: 7; pointer-events: none; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 720px) {

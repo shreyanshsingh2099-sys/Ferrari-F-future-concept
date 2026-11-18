@@ -273,11 +273,12 @@ export function buildWheels(M) {
     const spin = new THREE.Group(); spin.name = 'Wheel_' + name + '_Rotating';
     spin.add(proto[key].rim.clone(), proto[key].tyre.clone());
     const brake = proto[key].brake.clone();
-    // keep caliper fixed relative to the car, discs rotate with the wheel (static here)
+    // the caliper and upright stay fixed to the car; disc, bell and bobbins rotate with the wheel
+    for (const c of brake.children.slice()) if (c.name !== 'Caliper' && c.name !== 'Upright') spin.add(c);
     w.add(spin, brake);
     // calipers trail the axle: mirror orientation on the left side (seen from the outside)
     group.add(w);
-    wheels[name] = { group: w, spin };
+    wheels[name] = { group: w, spin, side, radius: spec.r, home: w.position.clone() };
   }
   group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return {

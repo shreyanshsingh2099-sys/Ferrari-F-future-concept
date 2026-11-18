@@ -51,14 +51,45 @@ Studio options: light or dark studio, quality presets (*High* adds GTAO ambient 
 are for tablets and phones), lights on/off. On narrow screens the layout switches to a mobile one with a
 collapsible control sheet and adjusts the camera framing for portrait.
 
+## Experience mode and secrets
+
+The **Experience** section of the Controls panel adds a few things to play with:
+
+| Feature | What it does |
+|---|---|
+| **Start engine** (`I`) | A synthesised V12 note (WebAudio, no sound files). The rev counter in the cockpit moves live, and the car shakes slightly at idle. |
+| **Rev · hold** (hold `Space`) | Revs to the red line, with exhaust flames and pops when you lift off. |
+| **Rolling road** | The wheels and brake discs spin, and the studio floor scrolls underneath. |
+| **Wind tunnel** | Animated streamlines that bend around the real body surface, coloured by how close they pass. |
+| **Exploded view** | Lifts the body, doors, bonnet, engine cover and cockpit apart so the chassis, V12 and suspension show. |
+| **Paint** | Seven colours: Rosso, Giallo Modena, Blu Tour de France, Verde Abetone, Argento, Bianco, Nero. |
+| **Save photo** | Downloads the current view as a PNG. |
+
+Leave the studio alone for 45 seconds and it slowly turns the car, like a showroom turntable.
+
+There are **six secrets** hidden in the studio. The Controls panel counts how many you have found, and the
+*Hints* list gives a clue for each. Your progress is saved in your browser.
+
+<details><summary>Spoilers</summary>
+
+1. The Konami code (↑ ↑ ↓ ↓ ← → ← → B A) unlocks a hidden gold paint, *Oro Segreto*. Enter it again to go back.
+2. Click the shield on the nose five times: horn, headlight flash and a motto.
+3. Open the front bonnet and click the rubber duck in the frunk.
+4. Type `v12` on the keyboard for an instant red-line burst.
+5. In cockpit mode, click the red manettino dial on the steering wheel to cycle WET, SPORT, RACE and CT OFF. The ambient lighting and the cluster change with it.
+6. Click the red button on the steering wheel to start or stop the engine.
+</details>
+
 ## Deliverables
 
 | File | What it is |
 |---|---|
 | `index.html` + `src/` | The interactive web viewer (Three.js). |
-| `models/ferrari-f-future.glb` | Optimised glTF 2.0 binary (17 MB): 397 named mesh nodes, about 800k triangles, PBR materials (clearcoat, anisotropy, sheen, emissive), embedded textures, `KHR_mesh_quantization`. It includes 5 animations: `Door_L_Open`, `Door_R_Open`, `Bonnet_Open`, `EngineCover_Open`, `Wing_Active`. It passes the Khronos glTF validator with no errors. |
+| `models/ferrari-f-future.glb` | Optimised glTF 2.0 binary (19 MB): about 425 named mesh nodes, about 860k triangles, PBR materials (clearcoat, anisotropy, sheen, emissive), embedded textures, `KHR_mesh_quantization`. It includes 5 animations: `Door_L_Open`, `Door_R_Open`, `Bonnet_Open`, `EngineCover_Open`, `Wing_Active`. It passes the Khronos glTF validator with no errors. |
 | `models/ferrari-f-future.blend` | An editable Blender project (Blender 5.x). It has a collection per sub-assembly, the animations as Actions, a studio (floor, area-light softboxes, world), a hero camera matching the reference and Cycles settings. ![](qa/render_blender_cycles_preview.png) |
 | `qa/` | QA comparisons against the reference views ([QA report](qa/QA-REPORT.md)). |
+
+![Experience mode](qa/render_fun_features.png)
 
 Textures (carbon twill with anisotropy direction maps, metallic flake, leather grain, honeycomb mesh,
 cross-drilled discs, tyre sidewall lettering, display graphics) are generated procedurally. The GLB embeds them,

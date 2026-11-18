@@ -97,15 +97,17 @@ export class Studio {
         shadowMap: { value: null },
         shadowSize: { value: new THREE.Vector2(7, 4.2) },
         shadowStrength: { value: dark ? 0.9 : 0.75 },
+        gridOffset: { value: this.gridOffset || (this.gridOffset = new THREE.Vector2()) }, // rolling-road scroll
         keyShadow: { value: null },
       },
       vertexShader: `varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
-      fragmentShader: `uniform vec3 base,line,hor; uniform sampler2D shadowMap; uniform vec2 shadowSize; uniform float shadowStrength; varying vec3 vW;
+      fragmentShader: `uniform vec3 base,line,hor; uniform sampler2D shadowMap; uniform vec2 shadowSize; uniform vec2 gridOffset; uniform float shadowStrength; varying vec3 vW;
         float gridLine(vec2 p, float s){ vec2 g=abs(fract(p/s-0.5)-0.5)*s; vec2 fw=fwidth(p)*1.2; vec2 l=1.0-smoothstep(vec2(0.0),fw,g); return max(l.x,l.y); }
         void main(){
           float r=length(vW.xz);
           vec3 c=base;
-          float gl=gridLine(vW.xz,1.0)*0.55+gridLine(vW.xz,0.25)*0.18;
+          vec2 gp=vW.xz+gridOffset;
+          float gl=gridLine(gp,1.0)*0.55+gridLine(gp,0.25)*0.18;
           c=mix(c,line,gl*(1.0-smoothstep(6.0,18.0,r)));
           vec2 suv=0.5-vW.xz/shadowSize;
           if(suv.x>0.0&&suv.x<1.0&&suv.y>0.0&&suv.y<1.0){ float s=texture2D(shadowMap,suv).r; c*=1.0-s*shadowStrength; }

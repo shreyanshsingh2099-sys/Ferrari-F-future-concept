@@ -7,6 +7,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Studio } from './studio.js';
 import { buildCar } from '../car/car.js';
+import { createFun, PAINTS, SECRETS } from './fun.js';
 
 const params = new URLSearchParams(location.search);
 const QA = params.has('qa');
@@ -116,7 +117,7 @@ function flyTo(pos, target, dur = 1.3, opts = {}) {
   } };
 }
 // keep the whole car framed on portrait / narrow screens
-function fitScale() { return Math.max(1, Math.pow(1.4 / camera.aspect, 0.95)); }
+function fitScale() { return Math.max(1, Math.pow(1.4 / camera.aspect, 0.95), 1 + 0.5 * (1.75 - camera.aspect)); }
 function fitPos(pos, target) {
   const k = fitScale();
   return pos.map((p, i) => target[i] + (p - target[i]) * k);
@@ -216,10 +217,10 @@ function toggle(name) {
 }
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 1600) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 1600);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms);
 }
 
 // ---------- design-note labels (annotations from the design sheet) ----------
@@ -268,9 +269,22 @@ canvas.addEventListener('pointerup', (e) => {
   if (!downAt || !car) return;
   const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
   if (moved > 6 || performance.now() - downAt[2] > 400) return;
+  if (pickEgg(e)) return;
   const hit = pick(e);
   if (hit && hit.action) toggle(hit.action);
 });
+// hidden interactive bits (nose badge, frunk duck, manettino, start button): only when not occluded
+function pickEgg(e) {
+  if (!fun) return false;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const eggHit = ray.intersectObjects(car.fun.eggs, true)[0];
+  if (!eggHit) return false;
+  const first = ray.intersectObjects(car.pickables, true)[0];
+  if (first && first.distance < eggHit.distance - 0.03) return false;
+  return fun.onEgg(eggHit.object);
+}
 canvas.addEventListener('dblclick', (e) => {
   const hit = pick(e);
   if (!hit) return;
@@ -311,9 +325,74 @@ qSel.addEventListener('change', () => { quality = qSel.value; resize(); });
 window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT') return;
   const k = e.key.toLowerCase();
+  noteInteraction();
+  if (k === ' ') { e.preventDefault(); if (fun && !e.repeat) fun.set('rev', true); return; }
+  if (fun && fun.onKey(k)) return;
+  if (k === 'i') { fun?.toggle('engine'); return; }
   const map = { '1': () => setMode('exterior'), '2': () => setMode('interior'), '3': () => setMode('engine'), '4': () => setMode('engineering'), l: () => toggle('doorL'), r: () => toggle('doorR'), h: () => toggle('hood'), e: () => toggle('engineCover'), w: () => toggle('wing'), t: () => toggle('autorotate'), x: () => toggle('xray'), n: () => toggle('labels'), f: () => setView('front'), s: () => setView('side'), b: () => setView('rear'), u: () => setView('top'), q: () => setView('threeQuarter') };
   if (map[k]) map[k]();
 });
+window.addEventListener('keyup', (e) => { if (e.key === ' ' && fun) fun.set('rev', false); });
+
+// ---------- experience: engine, rolling road, wind tunnel, exploded view, paint, photo, secrets ----------
+let fun = null;
+function syncFun() {
+  if (!fun) return;
+  document.querySelectorAll('[data-fun]').forEach((b) => {
+    const n = b.dataset.fun;
+    if (n === 'rev') { b.disabled = !fun.get('engine'); return; }
+    b.classList.toggle('on', fun.get(n));
+    if (n === 'engine') b.textContent = fun.get('engine') ? 'Stop engine' : 'Start engine';
+  });
+  document.querySelectorAll('#paints button').forEach((b) => b.classList.toggle('on', b.dataset.paint === fun.state.paint));
+  document.getElementById('paintName').textContent = fun.paintName();
+}
+function syncSecrets(found) {
+  document.getElementById('secretCount').textContent = `${found.size} / ${SECRETS.length}`;
+  const ul = document.getElementById('secretList'); ul.innerHTML = '';
+  for (const s of SECRETS) { const li = document.createElement('li'); const ok = found.has(s.id); li.className = ok ? 'found' : ''; li.textContent = ok ? s.found : s.hint; ul.appendChild(li); }
+}
+function initFunUI() {
+  const paints = document.getElementById('paints');
+  for (const p of PAINTS) {
+    const b = document.createElement('button');
+    b.dataset.paint = p.id; b.title = p.name; b.setAttribute('aria-label', p.name);
+    b.style.setProperty('--sw', '#' + p.color.toString(16).padStart(6, '0'));
+    b.addEventListener('click', () => fun.setPaint(p.id));
+    paints.appendChild(b);
+  }
+  document.querySelectorAll('[data-fun]').forEach((b) => {
+    const n = b.dataset.fun;
+    if (n === 'rev') {
+      const on = (e) => { e.preventDefault(); fun.set('rev', true); b.classList.add('on'); };
+      const off = () => { fun.set('rev', false); b.classList.remove('on'); };
+      b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+    } else b.addEventListener('click', () => { if (n === 'explode' && mode === 'interior') setMode('exterior'); fun.toggle(n); });
+  });
+  document.getElementById('photoBtn').addEventListener('click', savePhoto);
+  syncSecrets(fun.secrets());
+  syncFun();
+}
+function savePhoto() {
+  // render one clean frame and download it (the drawing buffer is valid within this task)
+  renderOnce();
+  renderer.domElement.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'ferrari-f-future.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast('Photo saved');
+  }, 'image/png');
+}
+
+// ---------- showroom idle: a slow turntable after a while without input ----------
+let lastInput = performance.now(), idleSpin = false;
+function noteInteraction() {
+  lastInput = performance.now();
+  if (idleSpin) { idleSpin = false; if (!autorotate) controls.autoRotate = false; }
+}
+for (const ev of ['pointerdown', 'wheel', 'touchstart']) window.addEventListener(ev, noteInteraction, { passive: true });
 
 // ---------- main ----------
 async function main() {
@@ -329,6 +408,10 @@ async function main() {
   studio.bakeContactShadow(car.root);
   buildLabels();
   syncAllToggles();
+  fun = createFun({ car, scene, studio, toast, onSecrets: syncSecrets, onState: syncFun });
+  initFunUI();
+  for (const key of (params.get('fun') || '').split(',').filter(Boolean)) fun.set(key, true, true);
+  if (params.get('paint')) fun.setPaint(params.get('paint'), true);
   progress(1, 'Ready');
   if (QA) document.getElementById('loader').remove();
   else setTimeout(() => document.getElementById('loader').classList.add('done'), 250);
@@ -344,7 +427,7 @@ async function main() {
     flyTo(c, t, 0, { fov: +(params.get('fov') || 30) });
   }
   window.__qa = {
-    ready: true, car, camera, controls, setView, setMode, flyTo, scene, renderer, studio,
+    ready: true, car, camera, controls, setView, setMode, flyTo, scene, renderer, studio, fun,
     render: () => renderOnce(),
     // advance animations/tweens deterministically (used by the QA screenshot tool)
     exportGLB: async () => {
@@ -385,10 +468,17 @@ function advance(dt) {
     tween.update(Math.min(tween.t, 1));
     if (tween.t >= 1) tween = null;
   }
+  if (!QA && !idleSpin && !autorotate && !tween && mode === 'exterior' && performance.now() - lastInput > 45000) {
+    idleSpin = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+  }
   controls.update(dt);
   if (car) car.update(dt, camera);
+  if (fun) fun.update(dt);
   updateLabels();
 }
+
+console.log('%c F-FUTURE %c  Il mito è l’unico sogno che non invecchia mai.', 'background:#c8102e;color:#fff;font-weight:700;letter-spacing:.3em;padding:4px 8px;border-radius:3px', 'color:#888;font-style:italic');
+console.log('There are six secrets hidden in this studio. The hints are in the Controls panel under “Secrets”.');
 
 main().catch((err) => {
   console.error(err);

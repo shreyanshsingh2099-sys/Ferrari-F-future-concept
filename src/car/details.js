@@ -291,7 +291,7 @@ export function buildDetails(M, mk) {
   {
     const y = 0.405, z = 0;
     const x = surfaceX(y, z, 1) ?? 2.43;
-    const b = placeOnSurface(shieldBadge(M, 0.62), x, y, z, 0.001); b.name = 'Badge_Nose';
+    const b = placeOnSurface(shieldBadge(M, 0.62), x, y, z, 0.001); b.name = 'Badge_Nose'; b.userData.egg = 'motto';
     group.add(b);
     const yr = 0.55, xr = surfaceX(yr, 0, -1) ?? -2.12;
     const r = placeOnSurface(shieldBadge(M, 0.55), xr, yr, 0, 0.001); r.name = 'Badge_Tail';

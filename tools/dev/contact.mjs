@@ -28,7 +28,7 @@ await page.goto(`http://localhost:${server.address().port}/index.html?qa=1&w=${W
 await page.waitForFunction(() => (window.__qa && window.__qa.ready) || window.__qaError, null, { timeout: 240000 });
 const err = await page.evaluate(() => window.__qaError); if (err) { console.log('BUILD ERROR', err); process.exit(1); }
 for (const [name, s] of Object.entries(SHOTS)) {
-  await page.evaluate((s) => { const q = window.__qa; if (s.mode) { q.setMode(s.mode); q.step(4); q.render(); return; } for (const k of ['doorL', 'doorR', 'hood', 'engineCover', 'wing']) q.car.set(k, (s.open || []).includes(k), true); q.flyTo(s.cam, s.target, 0, { fov: s.fov || 30 }); q.step(0.2); q.render(); }, s);
+  await page.evaluate((s) => { const q = window.__qa; if (s.mode) { q.setMode(s.mode); q.step(4); q.render(); return; } for (const k of ['doorL', 'doorR', 'hood', 'engineCover', 'wing']) q.car.set(k, (s.open || []).includes(k), true); q.flyTo(s.cam, s.target, 0, { fov: s.fov || 30 }); q.step(0.2); if (s.js) new Function('q', s.js)(q); q.render(); }, s);
   await page.screenshot({ path: path.join(out, name + '.png'), timeout: 180000 });
   console.log('shot', name);
 }
