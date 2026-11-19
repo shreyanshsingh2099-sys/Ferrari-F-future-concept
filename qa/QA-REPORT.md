@@ -10,6 +10,18 @@ Each comparison stacks three panels top to bottom: the **reference**, **this mod
 > the side view does. Where the views disagree, the **side view** sets the length and height dimensions and the
 > **top view** sets the plan dimensions.
 
+## Realism, app and simulation pass (checks)
+
+| Area | Check | Result |
+|---|---|---|
+| Engine audio | `tools/dev/engine-audio.mjs`: offline render of the AudioWorklet model in Chromium (start, idle, limiter, overrun, cabin, stop) | No non-finite samples and no clipping. Idle spectrum: strongest component at the firing frequency (97 Hz at 975 rpm), with the 3rd engine order from the uneven 65°/55° bank firing. Limiter shows the 1/3 sub-harmonic from the spark cut. Demo: `qa/engine_sound_demo.mp3` |
+| Audio artefact | A DynamicsCompressor in the mix intermodulated with the firing pulses (mirror tones in the spectrogram) | Replaced by a transparent oversampled soft limiter; mirror tones gone |
+| Rendering | HDRI environment sanitised: lossy EXR texels below zero or non-finite are removed. Bloom and output passes reject NaN/Inf pixels | A single NaN glint can no longer blank the frame |
+| Engineering | Assembly tree, selection inspector, measure, section plane, dimensions, clay/zebra/wire/X-ray/flow | Exercised by `tools/dev/smoke-ui.mjs`. The flow view is labelled *indicative only, not CFD* |
+| Drive physics (simulation values, **not F-Future data**) | `vehicle.js` defaults, flat road, SPORT | 0–100 km/h 2.9 s · 100–0 km/h 25.7 m · steady-state lateral grip 1.34 g (60 km/h), 1.44 g (120), 1.58 g (180, aero) · top speed 312 km/h · full lock gives understeer, no spin |
+| Drive stability | Autopilot (pure pursuit + yaw damping) laps of the 3.37 km circuit | SPORT 81.7 s, RACE 85.3 s: two clean laps each, max lateral offset 5.4 / 6.4 m (road half-width 6.5 m). The autopilot leaves CT OFF to human drivers |
+| Fixes found by these checks | Stability assist added yaw (spins), TC ignored the friction circle, ABS used the whole rear grip, no tyre load sensitivity, road ribbon wound clockwise (culled) | All fixed |
+
 ## Measured fidelity
 
 `node tools/dev/fidelity.mjs` compares the generated body against points measured on the reference sheet
@@ -119,4 +131,13 @@ silhouette overlap side 0.854, top 0.960, front 0.847, rear 0.828.
 | | |
 |---|---|
 | ![](render_hero.png) | ![](render_rear_quarter_wing_active.png) |
-| ![](render_engineering_ui.png) | ![](render_dark_studio_ui.png) |
+| ![](render_cockpit.png) | ![](render_daylight_set.png) |
+
+### App: showroom, engineering tools and drive
+
+| | |
+|---|---|
+| ![](render_ui_showroom.png) | ![](render_ui_engineering.png) |
+| ![](render_ui_zebra.png) | ![](render_ui_flow_dims.png) |
+| ![](render_ui_section.png) | ![](render_ui_drive.png) |
+| ![](render_ui_drive_telemetry.png) | ![](render_ui_drive_cockpit.png) |

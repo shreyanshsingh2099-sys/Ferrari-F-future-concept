@@ -1,17 +1,28 @@
-# Ferrari F-Future — interactive 3D concept model
+# Ferrari F-Future: interactive concept, engineering workspace and drive simulator
 
 A procedurally engineered, real-time 3D model of the **F-Future (2025)** concept, built from the seven
 reference sheets in [`reference/`](reference/) (orthographic views, blueprint, technical spec, surface detail,
-complete design and annotated hero renders). Everything — body panels, glass, lights, aero, wheels,
-brakes, suspension, cockpit and the naturally aspirated V12 — is real geometry generated in code with
-Three.js. It runs in a browser studio with working butterfly doors, opening bonnet and engine cover, an
-active rear wing, four viewing modes and annotated design notes.
+complete design and annotated hero renders). Everything is real geometry generated in code with Three.js:
+body panels, glass, lights, aero, wheels, brakes, suspension, cockpit and the naturally aspirated V12.
 
-![Viewer](qa/render_dark_studio_ui.png)
+The web app has three workspaces:
 
-| Butterfly doors | Cockpit | V12 inspection |
-|---|---|---|
-| ![](qa/render_butterfly_doors.png) | ![](qa/render_cockpit.png) | ![](qa/render_v12.png) |
+* **Showroom**: a photographic studio. The car sits on a polished epoxy floor that reflects it, in a dark
+  showroom lit by a real HDR photograph of a photo studio plus long strip softboxes. It has working
+  butterfly doors, bonnet, engine cover and active wing, plus paint, sets, scenes (Exterior, Cockpit, V12)
+  and a physically modelled V12 sound.
+* **Engineering**: an assembly tree with per-part triangle counts, a part inspector, distance measurement,
+  a section plane, CAD-style overall dimensions and surface analysis (clay, zebra, wireframe, X-ray, flow
+  incidence).
+* **Drive**: the car on an original, fictional 3.4 km test circuit. It has a real-time vehicle simulation,
+  four cameras, HUD with lap timing and live delta, minimap, g-meter, telemetry traces with CSV export,
+  an editable setup sheet and four challenges.
+
+![Showroom](qa/render_ui_showroom.png)
+
+| Engineering | Drive |
+|---|---|
+| ![](qa/render_ui_engineering.png) | ![](qa/render_ui_drive.png) |
 
 ## Run it
 
@@ -22,61 +33,117 @@ npx http-server . -p 8080 -c-1      # or: python3 -m http.server 8080
 # then open http://localhost:8080
 ```
 
-It also works as-is on GitHub Pages. Three.js r187 is bundled in `vendor/three/`, so no CDN is needed.
-On a desktop the car is generated in about 3 seconds.
+It also works as-is on GitHub Pages. Three.js r187, the fonts (Inter and JetBrains Mono, SIL OFL) and the
+HDR environments are bundled, so no CDN is needed. Sound needs a secure origin (https or localhost) for
+the AudioWorklet. Elsewhere it falls back to a simpler oscillator engine.
 
-## Using the viewer
+## Showroom
 
 | Action | Mouse / touch | Keyboard |
 |---|---|---|
 | Orbit / zoom / pan | drag · wheel or pinch · right-drag or two fingers | — |
-| Focus a component | double-click it | — |
-| Open / close a door | click the door, or *Left / Right / Both doors* | `L`, `R` |
-| Front bonnet, engine cover | click it, or the panel buttons | `H`, `E` |
-| Active wing (raise + incidence) | click the wing, or *Active wing* | `W` |
-| Camera presets | *¾ Front* (the exact camera of your hero render), *Front, Side, Rear, Top, ¾ Rear*, *Reset camera* | `Q F S B U` |
-| Viewing modes | bottom bar | `1`–`4` |
-| Turntable, X-ray, design notes | Studio section | `T`, `X`, `N` |
+| Scenes | *Exterior · Cockpit · V12* | `1` `2` `3` |
+| Open / close | click the door, bonnet, engine cover or wing, or the Openings buttons | `L` `R` `H` `E` `W` |
+| Camera presets | *¾ Front* is the exact camera of your hero render | `Q F S B U` |
+| Engine | *Start engine*, then hold *Rev* | `I`, hold `Space` |
+| Turntable, X-ray, design notes | Camera / Experience sections | `T` `X` `N` |
+| Sound on/off, photo, shortcuts | top bar | `M` `P` `?` |
 
-**Viewing modes**
+**Sets**: *Showroom* (dark, reflective floor), *Daylight* (white cove) and *Studio grid*. **Image**: quality
+(*High* adds ambient occlusion; *Balanced* keeps the floor reflections; *Low* is for phones) and look
+(*Neutral* for true colours, *Filmic* for AgX tone mapping).
 
-1. **Exterior showcase**: all panels closed, hero camera.
-2. **Interior cockpit showcase**: the left door opens and the camera moves to the driver's eye. Drag to look around.
-3. **Engine inspection**: the engine cover opens and the camera frames the V12.
-4. **Detailed engineering view**: the body turns to X-ray, every panel opens, and the design notes from
-   your sheet appear as clickable hotspots (*Ducti Fluxus attivi integrati*, *Ala attiva leggendaria tipo F40*,
-   *Scultura aerodinamica ispirata al Testarossa*, *Effetto suolo Fontana*, …).
+### How the image is made
 
-Studio options: light or dark studio, quality presets (*High* adds GTAO ambient occlusion; *Balanced* and *Low*
-are for tablets and phones), lights on/off. On narrow screens the layout switches to a mobile one with a
-collapsible control sheet and adjusts the camera framing for portrait.
+* Image-based lighting from a CC0 HDR photograph (Poly Haven, via `@pmndrs/assets`), combined with
+  emissive strip lights and prefiltered into a 512 px PMREM environment.
+* The floor uses a planar reflection with a rough, Fresnel-weighted blur and a baked soft contact
+  shadow. A key light adds soft shadows.
+* The paint is a clear-coated metallic. Flakes are hashed in object space, so they sparkle up close
+  without UVs, and a faint orange-peel ripple on the clear coat bends straight reflections like real
+  sprayed lacquer. Both fade out below pixel size.
+* Post-processing: GTAO (High), bloom only above an HDR threshold (LEDs and glints), Khronos PBR
+  Neutral or AgX tone mapping, a lens vignette and fine film grain.
+
+### Engine sound
+
+The V12 is not a recording. It is synthesised live in an AudioWorklet from a crank-angle model
+(`src/viewer/audio/engine-worklet.js`):
+
+* **Firing pulses**: a 65° V12 fires each bank every 120°, the second bank 65° later, so the firing
+  intervals alternate 65° and 55°. Each event sends a blow-down pressure pulse into its bank's exhaust.
+  The pulse width is a constant crank angle and there is a small cylinder-to-cylinder variation.
+* **Exhaust**: per-bank waveguides (header, collector, silencer) with reflection and loss give the
+  resonances and the bank-to-bank beat.
+* **Other sources**: intake roar, cam-drive whine, starter motor, a 9,000 rpm rev limiter that cuts
+  two sparks in three, and overrun pops on lift-off.
+* **Perspective**: an exterior view with a short room reverb, and a cabin view that is low-passed with
+  structure-borne boom.
+
+`qa/engine_sound_demo.mp3` is an offline render of the model (start, idle, limiter, overrun, cabin,
+shut-down). `node tools/dev/engine-audio.mjs` re-renders it and prints level and spectrum checks.
+
+## Engineering workspace
+
+| Tool | What it does | Key |
+|---|---|---|
+| Select | Click a part, or pick it in the assembly tree (filterable, with triangle counts and show/hide). The inspector shows instances, triangles, vertices, extents, centre and material parameters. | `V` |
+| Frame / Isolate / Hide | Fly to the selection, show only the selection, or hide it. *Shift+H* shows all. | `F` `I` `H` |
+| Measure | Click two surface points to get the distance and Δx/Δy/Δz in millimetres. | `G` |
+| Section | A clipping plane along X, Y or Z with an offset slider and a flip button. Measuring respects the cut. | `C` |
+| Dimensions | CAD-style overall length, width, height, wheelbase and tracks, from `src/car/dims.js`. | `D` |
+| Shading | *Shaded, Clay, Zebra* (reflection-line continuity), *Wire* (tessellation), *X-ray*, *Flow* (see below). | — |
+
+*Flow* colours each surface by its geometric incidence to the oncoming air (Newtonian sin²). It is
+**indicative only: it is not a CFD result and not a pressure measurement**. The *Vehicle data* table
+lists only dimensions measured from the sheets. **No power, torque, mass or performance figures are
+claimed for the F-Future.**
+
+## Drive workspace
+
+Press *Start* on the intro card, or `5` from anywhere.
+
+| | Keyboard | Gamepad | Touch |
+|---|---|---|---|
+| Throttle / brake | `W` `S` or `↑` `↓` | RT / LT | GAS / BRAKE |
+| Steer | `A` `D` or `←` `→` | left stick | ◀ ▶ |
+| Gears | automatic, or `Q` `E` (manual), `X` toggles | LB / RB | — |
+| Camera | `C`: chase, bonnet, cockpit, TV | Y | buttons |
+| Reset, telemetry, manettino, pause | `R` `T` `G` `Esc` | X, —, —, Start | — |
+
+* **Vehicle model** (`src/drive/vehicle.js`): a planar model integrated at 240 Hz. It has:
+  * longitudinal load transfer and a Pacejka-style tyre with load sensitivity and a friction circle;
+  * aerodynamic drag and downforce, where the active wing rises under braking and in fast corners and
+    flattens on straights;
+  * a seven-speed gearbox, rear-wheel drive and launch clutch slip;
+  * cornering-aware ABS, traction control and a stability assist. The manettino (*WET, SPORT, RACE,
+    CT OFF*) sets how much the assists intervene and the grip level.
+* **Challenges**: *Free run*, *Hot lap* (flying start, best lap and live delta saved in your browser),
+  *0–100 km/h*, and *Demo lap* (an autopilot drives so you can watch the telemetry).
+* **Telemetry**: `T` shows the last 30 s of speed, rpm, throttle, brake and steering. *CSV* exports the
+  whole session (time, distance, speed, rpm, gear, pedals, steering, g-forces, position).
+* **Setup sheet**: engine output, mass, weight distribution, grip, downforce, drag, aero balance,
+  brake bias and final drive.
+
+> All driving parameters and results are **simulation values chosen for believable behaviour, not
+> official or claimed F-Future specifications**. Only the geometry (wheelbase, tracks, tyre sizes)
+> comes from the design sheets.
 
 ## Experience mode and secrets
 
-The **Experience** section of the Controls panel adds a few things to play with:
+The Showroom's *Experience* section also has a rolling road, a wind tunnel (streamlines that bend around
+the real body surface), an exploded view and paint swatches. Leave the studio alone for 45 seconds and it
+slowly turns the car.
 
-| Feature | What it does |
-|---|---|
-| **Start engine** (`I`) | A synthesised V12 note (WebAudio, no sound files). The rev counter in the cockpit moves live, and the car shakes slightly at idle. |
-| **Rev · hold** (hold `Space`) | Revs to the red line, with exhaust flames and pops when you lift off. |
-| **Rolling road** | The wheels and brake discs spin, and the studio floor scrolls underneath. |
-| **Wind tunnel** | Animated streamlines that bend around the real body surface, coloured by how close they pass. |
-| **Exploded view** | Lifts the body, doors, bonnet, engine cover and cockpit apart so the chassis, V12 and suspension show. |
-| **Paint** | Seven colours: Rosso, Giallo Modena, Blu Tour de France, Verde Abetone, Argento, Bianco, Nero. |
-| **Save photo** | Downloads the current view as a PNG. |
-
-Leave the studio alone for 45 seconds and it slowly turns the car, like a showroom turntable.
-
-There are **six secrets** hidden in the studio. The Controls panel counts how many you have found, and the
-*Hints* list gives a clue for each. Your progress is saved in your browser.
+There are **six secrets**. The Configure panel counts how many you have found and gives a hint for each.
 
 <details><summary>Spoilers</summary>
 
-1. The Konami code (↑ ↑ ↓ ↓ ← → ← → B A) unlocks a hidden gold paint, *Oro Segreto*. Enter it again to go back.
+1. The Konami code (↑ ↑ ↓ ↓ ← → ← → B A) unlocks a hidden gold paint, *Oro Segreto*.
 2. Click the shield on the nose five times: horn, headlight flash and a motto.
 3. Open the front bonnet and click the rubber duck in the frunk.
-4. Type `v12` on the keyboard for an instant red-line burst.
-5. In cockpit mode, click the red manettino dial on the steering wheel to cycle WET, SPORT, RACE and CT OFF. The ambient lighting and the cluster change with it.
+4. Type `v12` for an instant red-line burst.
+5. In the cockpit, click the red manettino dial on the steering wheel to cycle WET, SPORT, RACE and CT OFF.
 6. Click the red button on the steering wheel to start or stop the engine.
 </details>
 
@@ -84,7 +151,7 @@ There are **six secrets** hidden in the studio. The Controls panel counts how ma
 
 | File | What it is |
 |---|---|
-| `index.html` + `src/` | The interactive web viewer (Three.js). |
+| `index.html` + `src/` | The web app: viewer and showroom (`src/viewer`), car generator (`src/car`), drive simulator (`src/drive`). |
 | `models/ferrari-f-future.glb` | Optimised glTF 2.0 binary (19 MB): about 425 named mesh nodes, about 860k triangles, PBR materials (clearcoat, anisotropy, sheen, emissive), embedded textures, `KHR_mesh_quantization`. It includes 5 animations: `Door_L_Open`, `Door_R_Open`, `Bonnet_Open`, `EngineCover_Open`, `Wing_Active`. It passes the Khronos glTF validator with no errors. |
 | `models/ferrari-f-future.blend` | An editable Blender project (Blender 5.x). It has a collection per sub-assembly, the animations as Actions, a studio (floor, area-light softboxes, world), a hero camera matching the reference and Cycles settings. ![](qa/render_blender_cycles_preview.png) |
 | `qa/` | QA comparisons against the reference views ([QA report](qa/QA-REPORT.md)). |

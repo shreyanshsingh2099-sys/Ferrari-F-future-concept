@@ -3,3 +3,4 @@ node_modules/
 *.blend1
 qa/tmp/
 qa/tmp/
+build/
