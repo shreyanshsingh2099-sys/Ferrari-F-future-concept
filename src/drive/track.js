@@ -196,7 +196,7 @@ export function buildTrack({ anisotropy = 8 } = {}) {
       .replace('#include <common>', '#include <common>\nuniform sampler2D agg;')
       .replace('#include <map_fragment>', `#include <map_fragment>
         vec3 a = texture2D(agg, vec2(vMapUv.x * 3.0, vMapUv.y * 0.6)).rgb;
-        diffuseColor.rgb *= a * 2.6;
+        diffuseColor.rgb *= mix(vec3(0.04), a, 0.6) * 24.0; // the aggregate texture averages ~0.04 in linear light: normalise it to ~1
         // start / finish line
         float sf = step(abs(vMapUv.y * 8.0 - 0.0), 0.35) + step(abs(vMapUv.y * 8.0 - ${(tr.length / 8).toFixed(2)}), 0.35);
         if (sf > 0.0) { float ch = mod(floor(vMapUv.x * 16.0) + floor(vMapUv.y * 8.0 * 4.0), 2.0); diffuseColor.rgb = mix(vec3(0.05), vec3(0.92), ch); }`);

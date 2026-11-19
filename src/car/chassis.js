@@ -151,12 +151,13 @@ function corner(M, x, side, front) {
   arm(lo, [x + 0.22, 0.14, side * 0.36], [x - 0.2, 0.14, side * 0.36]);
   arm(up, [x + 0.16, cy + 0.2, side * 0.44], [x - 0.16, cy + 0.2, side * 0.44], 0.01);
   // pushrod to rocker
-  const rocker = [x, cy + 0.28, side * 0.36];
+  // front coil-overs sit lower, under the bonnet-vent duct floor (not visible from the cockpit)
+  const rocker = [x, cy + (front ? 0.19 : 0.28), side * 0.36];
   geos.push(rod([x, cy - 0.15, wz - side * 0.08], rocker, 0.009, 8));
   // coil-over lying inboard
-  const dEnd = [x + (front ? -0.05 : 0.05), cy + 0.30, side * 0.08];
+  const dEnd = [x + (front ? -0.05 : 0.05), cy + (front ? 0.2 : 0.30), side * 0.08];
   const damper = rod(rocker, dEnd, 0.018, 14);
-  geos.push(rod(rocker, [x, cy + 0.33, side * 0.4], 0.012, 8));
+  geos.push(rod(rocker, [x, rocker[1] + 0.05, side * 0.4], 0.012, 8));
   const coil = [];
   const A = new THREE.Vector3(...rocker), B = new THREE.Vector3(...dEnd);
   const L = A.distanceTo(B);

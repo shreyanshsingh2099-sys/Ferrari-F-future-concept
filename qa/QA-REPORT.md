@@ -131,4 +131,13 @@ silhouette overlap side 0.854, top 0.960, front 0.847, rear 0.828.
 | | |
 |---|---|
 | ![](render_hero.png) | ![](render_rear_quarter_wing_active.png) |
-| ![](render_engineering_ui.png) | ![](render_dark_studio_ui.png) |
+| ![](render_cockpit.png) | ![](render_daylight_set.png) |
+
+### App: showroom, engineering tools and drive
+
+| | |
+|---|---|
+| ![](render_ui_showroom.png) | ![](render_ui_engineering.png) |
+| ![](render_ui_zebra.png) | ![](render_ui_flow_dims.png) |
+| ![](render_ui_section.png) | ![](render_ui_drive.png) |
+| ![](render_ui_drive_telemetry.png) | ![](render_ui_drive_cockpit.png) |

@@ -35,7 +35,7 @@ for (const st of steps) {
       window.__measure = document.getElementById('measureOut').textContent;
     }
     else if (st === 'drive') { await q.setWorkspace('drive'); }
-    else if (st === 'drive-go') { document.getElementById('driveGo').click(); q.drive.qaRun(5, 'auto', 20, 0); }
+    else if (st === 'drive-go') { await q.setWorkspace('drive'); document.getElementById('driveGo').click(); q.drive.qaRun(5, 'auto', 20, 0); }
     else if (st === 'drive-cockpit') { q.drive.setCam('cockpit'); q.drive.qaRun(3, 'auto', 560, 30); }
     else if (st === 'drive-tv') { q.drive.setCam('tv'); q.drive.qaRun(3, 'auto', 1500, 30); }
     else if (st === 'drive-chase') { q.drive.setCam('chase'); q.drive.qaRun(6, 'auto', 900, 30); document.getElementById('telemetry').hidden = false; }

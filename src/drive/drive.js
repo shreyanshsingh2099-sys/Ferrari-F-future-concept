@@ -252,7 +252,7 @@ export function createDrive({ renderer, scene, camera, controls, car, studio, so
     $('hudABS').className = veh.absAct ? 'act' : 'on';
     $('hudDRS').className = veh.wing ? 'act' : 'on';
     const lt = $('hudLapTime');
-    lt.textContent = lap.armed ? fmt(lap.t) : challenge === 'launch' ? (launch.state === 'run' || launch.state === 'done' ? launch.t.toFixed(2) + ' s' : '0.00 s') : '-:--.---';
+    lt.textContent = lap.armed ? fmt(lap.t) : challenge === 'launch' ? (launch.state === 'run' || launch.state === 'done' ? launch.t.toFixed(2) + ' s' : '0.00 s') : '0:00.000';
     lt.classList.toggle('idle', !lap.armed && !(challenge === 'launch' && launch.state !== 'ready'));
     $('hudBest').textContent = challenge === 'launch' ? (launch.best ? launch.best.toFixed(2) + ' s' : '–') : fmt(lap.best);
     $('hudLast').textContent = fmt(lap.last);
